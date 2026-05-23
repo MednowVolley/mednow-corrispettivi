@@ -3,231 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mednow – Verifica Corrispettivi</title>
+<title>Mednow — Corrispettivi Medici</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#185FA5;--blue-dark:#0c447c;--blue-light:#e6f1fb;
-  --green:#3B6D11;--green-light:#eaf3de;
-  --red:#A32D2D;--red-light:#fcebeb;
-  --amber:#854F0B;--amber-light:#faeeda;
-  --gray:#5F5E5A;--gray-light:#F1EFE8;
-  --border:#e2e0d8;--text:#2C2C2A;--text2:#5F5E5A;
-  --font:'Segoe UI',system-ui,sans-serif;
+  --blue:#185FA5;--blue2:#1e6aff;--blue-dim:rgba(24,95,165,0.12);
+  --green:#2d8a4e;--green-dim:rgba(45,138,78,0.12);
+  --red:#c0392b;--red-dim:rgba(192,57,43,0.1);
+  --amber:#c07a00;--amber-dim:rgba(192,122,0,0.1);
+  --sidebar:#0d1117;--sidebar2:#161b22;--sidebar3:#21262d;
+  --surface:#ffffff;--surface2:#f6f8fa;--surface3:#eaeef2;
+  --text:#1c2128;--text2:#57606a;--text3:#8c959f;
+  --border:#d0d7de;--border2:#e6eaed;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1),0 1px 4px rgba(0,0,0,.06);
 }
-body{font-family:var(--font);background:#f7f6f2;color:var(--text);font-size:14px}
 
-/* LAYOUT */
-.app{display:flex;min-height:100vh}
-.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.logo{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
-.logo-main{font-size:17px;font-weight:700;color:var(--blue);letter-spacing:-0.3px}
-.logo-sub{font-size:11px;color:var(--text2);margin-top:1px}
-.nav{padding:12px 8px;flex:1}
-.nav-section{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;padding:10px 8px 4px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:13px;transition:all 0.12s;text-decoration:none}
-.nav-item:hover{background:var(--gray-light);color:var(--text)}
-.nav-item.active{background:var(--blue-light);color:var(--blue);font-weight:500}
-.nav-item svg{width:16px;height:16px;flex-shrink:0}
-.main{flex:1;overflow-y:auto;padding:24px;background:#f7f6f2}
-.page{display:none}
+html,body{height:100%;font-family:var(--font);background:var(--surface2);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sidebar-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.logo-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:4px}
+.logo-dot{width:8px;height:8px;background:var(--blue2);border-radius:50%;box-shadow:0 0 8px var(--blue2)}
+.logo-name{font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.3px}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:0.04em;text-transform:uppercase;margin-left:16px}
+
+.sidebar-nav{padding:12px 10px;flex:1;overflow-y:auto}
+.nav-group{margin-bottom:20px}
+.nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:0.08em;padding:0 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;transition:all 0.15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:rgba(24,95,165,.25);color:#5b9cf6;border:1px solid rgba(91,156,246,.2)}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
+.nav-item.active svg{opacity:1}
+
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.06)}
+.sidebar-month{font-size:12px;color:rgba(255,255,255,.4)}
+.sidebar-month strong{color:rgba(255,255,255,.7);display:block;font-size:13px;margin-top:2px}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+
+.content{flex:1;overflow-y:auto;padding:24px}
+.page{display:none;animation:fadeUp .2s ease}
 .page.active{display:block}
-.page-header{margin-bottom:20px}
-.page-title{font-size:20px;font-weight:600;color:var(--text)}
-.page-sub{font-size:13px;color:var(--text2);margin-top:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* CARDS */
-.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px}
-.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
+.card-title svg{width:14px;height:14px;color:var(--text3)}
 
-/* GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
-.kpi{background:#fff;border:1px solid var(--border);border-radius:9px;padding:12px 14px}
-.kpi-label{font-size:11px;color:var(--text2);margin-bottom:4px}
-.kpi-val{font-size:22px;font-weight:600;color:var(--text)}
-.kpi-val.blue{color:var(--blue)}
-.kpi-val.green{color:var(--green)}
-.kpi-val.red{color:var(--red)}
-.kpi-val.amber{color:var(--amber)}
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+.kpi.green::before{background:linear-gradient(90deg,#2d8a4e,#3eb868)}
+.kpi.red::before{background:linear-gradient(90deg,#c0392b,#e74c3c)}
+.kpi.amber::before{background:linear-gradient(90deg,#c07a00,#e6a817)}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.5px}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
 
-/* UPLOAD AREA */
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
-.drop-zone{border:1.5px dashed var(--border);border-radius:9px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:#fafaf8}
-.drop-zone:hover,.drop-zone.drag{background:var(--blue-light);border-color:var(--blue)}
-.drop-zone svg{width:28px;height:28px;color:var(--text2);margin-bottom:8px}
-.drop-zone-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
-.drop-zone-sub{font-size:11px;color:var(--text2)}
-.drop-zone.loaded{border-color:var(--green);background:var(--green-light)}
-.drop-zone.loaded .drop-zone-title{color:var(--green)}
+/* ── UPLOAD ── */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.dz{border:1.5px dashed var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2)}
+.dz:hover{border-color:var(--blue);background:var(--blue-dim)}
+.dz.drag{border-color:var(--blue);background:var(--blue-dim)}
+.dz.loaded{border-color:var(--green);border-style:solid;background:var(--green-dim)}
+.dz-icon{width:32px;height:32px;margin:0 auto 10px;color:var(--text3)}
+.dz.loaded .dz-icon{color:var(--green)}
+.dz-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.dz.loaded .dz-title{color:var(--green)}
+.dz-sub{font-size:11px;color:var(--text3)}
+.dz-info{font-size:11px;color:var(--text3);margin-top:6px}
+.dz.loaded .dz-info{color:var(--green)}
 
-/* BADGE */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
-.badge-ok{background:var(--green-light);color:var(--green)}
-.badge-warn{background:var(--amber-light);color:var(--amber)}
-.badge-err{background:var(--red-light);color:var(--red)}
-.badge-blue{background:var(--blue-light);color:var(--blue)}
-.badge-gray{background:var(--gray-light);color:var(--gray)}
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.01em}
+.b-blue{background:var(--blue-dim);color:var(--blue)}
+.b-green{background:var(--green-dim);color:var(--green)}
+.b-red{background:var(--red-dim);color:var(--red)}
+.b-amber{background:var(--amber-dim);color:var(--amber)}
+.b-gray{background:var(--surface3);color:var(--text3)}
 
-/* TABLE */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{text-align:left;padding:8px 10px;color:var(--text2);font-weight:500;border-bottom:1.5px solid var(--border);background:#fafaf8;font-size:11px;text-transform:uppercase;letter-spacing:0.04em}
-td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#fafaf8}
-.td-right{text-align:right;font-variant-numeric:tabular-nums}
-.td-mono{font-family:monospace;font-size:12px}
+/* ── ALERT ── */
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;border-left:3px solid}
+.alert svg{width:15px;height:15px;flex-shrink:0;margin-top:1px}
+.a-info{background:var(--blue-dim);color:var(--blue);border-color:var(--blue)}
+.a-ok{background:var(--green-dim);color:var(--green);border-color:var(--green)}
+.a-warn{background:var(--amber-dim);color:var(--amber);border-color:var(--amber)}
+.a-err{background:var(--red-dim);color:var(--red);border-color:var(--red)}
 
-/* ALERT */
-.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
-.alert svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
-.alert-info{background:var(--blue-light);color:var(--blue)}
-.alert-warn{background:var(--amber-light);color:var(--amber)}
-.alert-err{background:var(--red-light);color:var(--red)}
-.alert-ok{background:var(--green-light);color:var(--green)}
-
-/* BUTTONS */
-.btn{padding:7px 14px;border-radius:7px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text);transition:all 0.12s;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{background:var(--gray-light)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all .13s;font-family:var(--font)}
+.btn:hover{background:var(--surface2);border-color:var(--border)}
 .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.btn-primary:hover{background:var(--blue-dark)}
+.btn-primary:hover{background:var(--blue2);border-color:var(--blue2)}
 .btn-sm{padding:5px 10px;font-size:12px}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 
-/* STEPS */
-.steps{display:flex;gap:6px;margin-bottom:20px}
-.step{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;background:#fff;color:var(--text2);border:1px solid var(--border)}
-.step.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.step.done{background:var(--green-light);color:var(--green);border-color:var(--green-light)}
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border2)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead{background:var(--surface2)}
+th{padding:9px 12px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border2);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface2)}
+.td-r{text-align:right;font-family:var(--mono);font-size:12px}
+.td-green{color:var(--green);font-weight:600}
+.td-red{color:var(--red);font-weight:600}
+.td-blue{color:var(--blue);font-weight:600}
+.td-amber{color:var(--amber);font-weight:600}
 
-/* DIFF HIGHLIGHT */
-.diff-ok{color:var(--green);font-weight:500}
-.diff-err{color:var(--red);font-weight:600}
-.diff-warn{color:var(--amber);font-weight:500}
+/* ── MEDICO CARD ── */
+.mc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);transition:box-shadow .15s}
+.mc:hover{box-shadow:var(--shadow-md)}
+.mc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer}
+.mc-left{display:flex;align-items:center;gap:12px}
+.mc-avatar{width:36px;height:36px;border-radius:9px;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue);flex-shrink:0;font-family:var(--mono)}
+.mc-name{font-size:14px;font-weight:600;color:var(--text)}
+.mc-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.mc-right{display:flex;align-items:center;gap:10px}
+.mc-netto{font-size:17px;font-weight:700;color:var(--green);font-family:var(--mono)}
+.mc-chevron{color:var(--text3);font-size:16px;transition:transform .2s}
+.mc.open .mc-chevron{transform:rotate(180deg)}
+.mc-body{display:none;padding:16px 18px;border-top:1px solid var(--border2);background:var(--surface2)}
+.mc.open .mc-body{display:block}
 
-/* MEDICO ROW */
-.medico-row{border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden}
-.medico-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;background:#fff;transition:background 0.12s}
-.medico-header:hover{background:#fafaf8}
-.medico-name{font-size:14px;font-weight:600;color:var(--text)}
-.medico-meta{font-size:12px;color:var(--text2);margin-top:1px}
-.medico-body{display:none;padding:14px 16px;border-top:1px solid var(--border);background:#fafaf8}
-.medico-body.open{display:block}
-.amounts-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
-.amt{background:#fff;border-radius:7px;padding:10px 12px;border:1px solid var(--border)}
-.amt-label{font-size:11px;color:var(--text2);margin-bottom:3px}
-.amt-val{font-size:15px;font-weight:600}
+.mc-amounts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.ma{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 12px}
+.ma-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px}
+.ma-val{font-size:14px;font-weight:700;font-family:var(--mono)}
 
-/* EXPORT */
-.export-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.export-card{border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all 0.12s;background:#fff}
-.export-card:hover{border-color:var(--blue);background:var(--blue-light)}
-.export-card-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
-.export-card-sub{font-size:11px;color:var(--text2)}
+/* ── CORRISPETTIVO CARD ── */
+.cc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
+.cc-head{padding:16px 20px 14px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:flex-start}
+.cc-name{font-size:15px;font-weight:700;color:var(--text)}
+.cc-period{font-size:11px;color:var(--text3);margin-top:2px}
+.cc-body{padding:16px 20px}
+.cc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
+.cc-row + .cc-row{border-top:1px solid var(--border2)}
+.cc-label{color:var(--text2)}
+.cc-val{font-family:var(--mono);font-size:13px;font-weight:500}
+.cc-total{border-top:2px solid var(--border);margin-top:4px;padding-top:10px;margin-bottom:0}
+.cc-total .cc-label{font-weight:700;font-size:14px;color:var(--text)}
+.cc-total .cc-val{font-size:18px;font-weight:800;color:var(--green);font-family:var(--mono)}
 
-/* SELECT */
-select,input[type=text],input[type=number]{padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:#fff;color:var(--text);outline:none}
+/* ── SELECT ── */
+select,input[type=text]{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;transition:border .13s}
 select:focus,input:focus{border-color:var(--blue)}
-
 input[type=file]{display:none}
+
+/* ── STEPS ── */
+.steps{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border2);border-radius:9px;overflow:hidden;background:var(--surface)}
+.step{flex:1;padding:10px 14px;font-size:12px;font-weight:500;color:var(--text3);text-align:center;transition:all .15s;cursor:default;border-right:1px solid var(--border2)}
+.step:last-child{border-right:none}
+.step.active{background:var(--blue);color:#fff}
+.step.done{background:var(--green-dim);color:var(--green)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty-sub{font-size:13px}
+
+/* ── PERIODO PILL ── */
+.periodo-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;box-shadow:var(--shadow)}
+.periodo-label{font-size:12px;color:var(--text3);font-weight:500}
+
+/* ── INCONGRUENZA ── */
+.inc-item{display:flex;gap:12px;padding:12px 16px;border-radius:9px;margin-bottom:8px;align-items:flex-start}
+.inc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.inc-icon svg{width:16px;height:16px}
+.inc-err .inc-icon{background:var(--red-dim);color:var(--red)}
+.inc-warn .inc-icon{background:var(--amber-dim);color:var(--amber)}
+.inc-ok .inc-icon{background:var(--green-dim);color:var(--green)}
+.inc-body{flex:1}
+.inc-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.inc-msg{font-size:12px;color:var(--text2)}
+.inc-item{background:var(--surface);border:1px solid var(--border2);box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="shell">
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="logo">
-    <div class="logo-main">Mednow</div>
-    <div class="logo-sub">Verifica Corrispettivi</div>
+  <div class="sidebar-logo">
+    <div class="logo-badge"><div class="logo-dot"></div><span class="logo-name">Mednow</span></div>
+    <div class="logo-sub">Corrispettivi Medici</div>
   </div>
-  <nav class="nav">
-    <div class="nav-section">Processo</div>
-    <a class="nav-item active" onclick="showPage('carica')" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Carica File
-    </a>
-    <a class="nav-item" onclick="showPage('verifica')" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Verifica & Match
-    </a>
-    <a class="nav-item" onclick="showPage('corrispettivi')" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      Corrispettivi
-    </a>
-    <a class="nav-item" onclick="showPage('incongruenze')" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      Incongruenze
-    </a>
-    <div class="nav-section">Impostazioni</div>
-    <a class="nav-item" onclick="showPage('quote')" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-      Quote Medici
-    </a>
+  <nav class="sidebar-nav">
+    <div class="nav-group">
+      <div class="nav-label">Flusso mensile</div>
+      <button class="nav-item active" onclick="nav(this,'carica')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Carica file
+      </button>
+      <button class="nav-item" onclick="nav(this,'verifica')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Verifica & Match
+      </button>
+      <button class="nav-item" onclick="nav(this,'corrispettivi')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Corrispettivi
+      </button>
+      <button class="nav-item" onclick="nav(this,'incongruenze')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Incongruenze
+      </button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Configurazione</div>
+      <button class="nav-item" onclick="nav(this,'quote')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Quote medici
+      </button>
+    </div>
   </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-month">Periodo attivo<strong id="sb-periodo">—</strong></div>
+  </div>
 </aside>
 
 <!-- MAIN -->
-<main class="main">
-
-<!-- CARICA -->
-<div id="page-carica" class="page active">
-  <div class="page-header">
-    <div class="page-title">Carica file mensili</div>
-    <div class="page-sub">Fatture XML, corrispettivi XLS e report portali esterni</div>
-  </div>
-
-  <div class="steps">
-    <div class="step active" id="step1">1. Fatture XML</div>
-    <div class="step" id="step2">2. Portali esterni</div>
-    <div class="step" id="step3">3. Elabora</div>
-  </div>
-
-  <div class="alert alert-info">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div>Carica il file ZIP delle fatture XML del mese (RG e/o Zara) + i report iDoctors, Davinci, Doctolib, CupSolidale. I corrispettivi vengono letti automaticamente dal Drive.</div>
-  </div>
-
-  <div class="upload-grid">
-    <div class="drop-zone" id="dz-fatture-rg" onclick="document.getElementById('fi-fatture-rg').click()" ondragover="dzDrag(event,'dz-fatture-rg')" ondragleave="dzLeave('dz-fatture-rg')" ondrop="dzDrop(event,'dz-fatture-rg','fatture-rg')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <div class="drop-zone-title">Fatture XML — Regina Giovanna</div>
-      <div class="drop-zone-sub">ZIP con file XML</div>
-      <div id="dz-fatture-rg-info" style="font-size:11px;margin-top:6px;color:var(--text2)"></div>
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="tb-title">Carica file mensili</div>
+      <div class="topbar-sub" id="tb-sub">Fatture XML + report portali → corrispettivi automatici</div>
     </div>
-    <div class="drop-zone" id="dz-fatture-zara" onclick="document.getElementById('fi-fatture-zara').click()" ondragover="dzDrag(event,'dz-fatture-zara')" ondragleave="dzLeave('dz-fatture-zara')" ondrop="dzDrop(event,'dz-fatture-zara','fatture-zara')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <div class="drop-zone-title">Fatture XML — Zara</div>
-      <div class="drop-zone-sub">ZIP con file XML</div>
-      <div id="dz-fatture-zara-info" style="font-size:11px;margin-top:6px;color:var(--text2)"></div>
-    </div>
-    <div class="drop-zone" id="dz-idoctors" onclick="document.getElementById('fi-idoctors').click()" ondragover="dzDrag(event,'dz-idoctors')" ondragleave="dzLeave('dz-idoctors')" ondrop="dzDrop(event,'dz-idoctors','idoctors')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="drop-zone-title">iDoctors — Report prenotazioni</div>
-      <div class="drop-zone-sub">XLSX iDoctors</div>
-      <div id="dz-idoctors-info" style="font-size:11px;margin-top:6px;color:var(--text2)"></div>
-    </div>
-    <div class="drop-zone" id="dz-davinci" onclick="document.getElementById('fi-davinci').click()" ondragover="dzDrag(event,'dz-davinci')" ondragleave="dzLeave('dz-davinci')" ondrop="dzDrop(event,'dz-davinci','davinci')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="drop-zone-title">Davinci / Doctolib / CupSolidale</div>
-      <div class="drop-zone-sub">XLSX portali — anche multipli</div>
-      <div id="dz-davinci-info" style="font-size:11px;margin-top:6px;color:var(--text2)"></div>
-    </div>
-  </div>
-
-  <input type="file" id="fi-fatture-rg" accept=".zip" onchange="handleFile(this,'fatture-rg','dz-fatture-rg')">
-  <input type="file" id="fi-fatture-zara" accept=".zip" onchange="handleFile(this,'fatture-zara','dz-fatture-zara')">
-  <input type="file" id="fi-idoctors" accept=".xlsx,.xls" multiple onchange="handleFile(this,'idoctors','dz-idoctors')">
-  <input type="file" id="fi-davinci" accept=".xlsx,.xls" multiple onchange="handleFile(this,'davinci','dz-davinci')">
-
-  <div class="card" style="margin-top:8px">
-    <div class="card-title">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Periodo di riferimento
-    </div>
-    <div style="display:flex;gap:10px;align-items:center">
-      <select id="sel-mese">
+    <div class="topbar-actions">
+      <select id="sel-mese" onchange="updatePeriodo()">
         <option value="01">Gennaio</option><option value="02">Febbraio</option>
         <option value="03">Marzo</option><option value="04">Aprile</option>
         <option value="05" selected>Maggio</option><option value="06">Giugno</option>
@@ -235,274 +263,250 @@ input[type=file]{display:none}
         <option value="09">Settembre</option><option value="10">Ottobre</option>
         <option value="11">Novembre</option><option value="12">Dicembre</option>
       </select>
-      <select id="sel-anno"><option value="2026" selected>2026</option><option value="2027">2027</option></select>
+      <select id="sel-anno" onchange="updatePeriodo()">
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+      </select>
     </div>
   </div>
 
-  <div class="btn-row">
-    <button class="btn btn-primary" onclick="elabora()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Elabora e verifica
-    </button>
-    <button class="btn" onclick="loadDemo()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-      Carica dati demo
-    </button>
+  <div class="content">
+
+    <!-- CARICA -->
+    <div id="page-carica" class="page active">
+      <div class="steps">
+        <div class="step active">1 — Carica fatture XML</div>
+        <div class="step">2 — Carica portali esterni</div>
+        <div class="step">3 — Elabora</div>
+      </div>
+
+      <div class="alert a-info">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>Carica il ZIP delle fatture XML (RG e/o Zara) + i report XLSX dei portali. I corrispettivi vengono calcolati automaticamente con le detrazioni portali già applicate.</div>
+      </div>
+
+      <div class="upload-grid">
+        <div class="dz" id="dz-rg" onclick="document.getElementById('fi-rg').click()" ondragover="dzOn(event,'dz-rg')" ondragleave="dzOff('dz-rg')" ondrop="dzDrop(event,'dz-rg','rg')">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div class="dz-title">Fatture XML — Regina Giovanna</div>
+          <div class="dz-sub">ZIP con file .xml</div>
+          <div class="dz-info" id="dz-rg-info"></div>
+        </div>
+        <div class="dz" id="dz-zara" onclick="document.getElementById('fi-zara').click()" ondragover="dzOn(event,'dz-zara')" ondragleave="dzOff('dz-zara')" ondrop="dzDrop(event,'dz-zara','zara')">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div class="dz-title">Fatture XML — Zara</div>
+          <div class="dz-sub">ZIP con file .xml</div>
+          <div class="dz-info" id="dz-zara-info"></div>
+        </div>
+        <div class="dz" id="dz-idoc" onclick="document.getElementById('fi-idoc').click()" ondragover="dzOn(event,'dz-idoc')" ondragleave="dzOff('dz-idoc')" ondrop="dzDrop(event,'dz-idoc','idoctors')">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <div class="dz-title">iDoctors</div>
+          <div class="dz-sub">Report prenotazioni XLSX</div>
+          <div class="dz-info" id="dz-idoc-info"></div>
+        </div>
+        <div class="dz" id="dz-dav" onclick="document.getElementById('fi-dav').click()" ondragover="dzOn(event,'dz-dav')" ondragleave="dzOff('dz-dav')" ondrop="dzDrop(event,'dz-dav','davinci')">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <div class="dz-title">Davinci / Doctolib / CupSolidale</div>
+          <div class="dz-sub">Report portali XLSX — anche multipli</div>
+          <div class="dz-info" id="dz-dav-info"></div>
+        </div>
+      </div>
+
+      <input type="file" id="fi-rg" accept=".zip" onchange="handleF(this,'rg','dz-rg')">
+      <input type="file" id="fi-zara" accept=".zip" onchange="handleF(this,'zara','dz-zara')">
+      <input type="file" id="fi-idoc" accept=".xlsx,.xls" multiple onchange="handleF(this,'idoctors','dz-idoc')">
+      <input type="file" id="fi-dav" accept=".xlsx,.xls" multiple onchange="handleF(this,'davinci','dz-dav')">
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="elabora()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Elabora e verifica
+        </button>
+        <button class="btn" onclick="demo()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Carica dati demo
+        </button>
+      </div>
+    </div>
+
+    <!-- VERIFICA -->
+    <div id="page-verifica" class="page">
+      <div id="verifica-kpi" class="kpi-row"></div>
+      <div id="verifica-list"></div>
+    </div>
+
+    <!-- CORRISPETTIVI -->
+    <div id="page-corrispettivi" class="page">
+      <div id="corr-list"></div>
+    </div>
+
+    <!-- INCONGRUENZE -->
+    <div id="page-incongruenze" class="page">
+      <div id="inc-list"></div>
+    </div>
+
+    <!-- QUOTE -->
+    <div id="page-quote" class="page">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Detrazione portali esterni
+          </div>
+        </div>
+        <div class="alert a-warn" style="margin-bottom:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div>Per ogni prenotazione da <strong>iDoctors, Davinci, Doctolib, CupSolidale</strong>: detrazione <strong>6% + IVA 22% = 7,32%</strong> sul compenso del medico</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Portale</th><th>Detrazione</th><th>IVA 22%</th><th>Totale sul compenso</th><th>Esempio su €100</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge b-blue">iDoctors</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
+              <tr><td><span class="badge b-blue">Davinci / Elty</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
+              <tr><td><span class="badge b-blue">Doctolib</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
+              <tr><td><span class="badge b-blue">CupSolidale</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Quote medici</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Medico</th><th>Accordo</th><th>Tipo</th></tr></thead>
+            <tbody id="quote-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
-
-<!-- VERIFICA -->
-<div id="page-verifica" class="page">
-  <div class="page-header">
-    <div class="page-title">Verifica & Match</div>
-    <div class="page-sub" id="verifica-sub">In attesa di elaborazione</div>
-  </div>
-  <div id="verifica-content">
-    <div class="alert alert-info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <div>Carica i file nella sezione "Carica File" e premi Elabora per vedere il match.</div>
-    </div>
-  </div>
-</div>
-
-<!-- CORRISPETTIVI -->
-<div id="page-corrispettivi" class="page">
-  <div class="page-header">
-    <div class="page-title">Corrispettivi da inviare</div>
-    <div class="page-sub" id="corr-sub">Generati automaticamente con detrazioni portali</div>
-  </div>
-  <div id="corr-content">
-    <div class="alert alert-info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <div>Dopo l'elaborazione troverai qui i corrispettivi corretti pronti per ogni medico, con la detrazione portali già applicata.</div>
-    </div>
-  </div>
-</div>
-
-<!-- INCONGRUENZE -->
-<div id="page-incongruenze" class="page">
-  <div class="page-header">
-    <div class="page-title">Incongruenze rilevate</div>
-    <div class="page-sub">Prestazioni fatturate senza corrispettivo o con importo diverso</div>
-  </div>
-  <div id="inc-content">
-    <div class="alert alert-info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <div>Le incongruenze appariranno qui dopo l'elaborazione.</div>
-    </div>
-  </div>
-</div>
-
-<!-- QUOTE -->
-<div id="page-quote" class="page">
-  <div class="page-header">
-    <div class="page-title">Quote medici</div>
-    <div class="page-sub">Condizioni economiche per il calcolo dei corrispettivi</div>
-  </div>
-  <div class="card">
-    <div class="card-title">Regole detrazioni portali esterni</div>
-    <div class="alert alert-warn" style="margin-bottom:12px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div>Per ogni prenotazione proveniente da iDoctors, Davinci, Doctolib o CupSolidale: <strong>detrazione 6% + IVA 22% = 7,32%</strong> sul compenso del medico</div>
-    </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Portale</th><th>% Detrazione</th><th>IVA</th><th>Totale sul compenso</th><th>Esempio €100</th></tr></thead>
-        <tbody>
-          <tr><td>iDoctors</td><td>6%</td><td>22% su 6%</td><td class="diff-err">−7,32%</td><td>→ €92,68</td></tr>
-          <tr><td>Davinci / Elty</td><td>6%</td><td>22% su 6%</td><td class="diff-err">−7,32%</td><td>→ €92,68</td></tr>
-          <tr><td>Doctolib</td><td>6%</td><td>22% su 6%</td><td class="diff-err">−7,32%</td><td>→ €92,68</td></tr>
-          <tr><td>CupSolidale</td><td>6%</td><td>22% su 6%</td><td class="diff-err">−7,32%</td><td>→ €92,68</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Quote principali medici (da anagrafica)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Medico</th><th>Quota</th><th>Tipo</th><th>Sede</th></tr></thead>
-        <tbody id="quote-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-</main>
 </div>
 
 <script>
-// === DATI ===
-const DB_QUOTE = {
-  "ABRATE":     {pct:null, fisso:35, note:"€35 a trattamento podologico"},
-  "ALESSI":     {pct:70, note:"70/30"},
-  "ALGERI":     {pct:80, note:"80/20"},
-  "ACCORNERO":  {pct:70, note:"70/30"},
-  "ADINOLFI":   {pct:70, note:"70/30"},
-  "ANGILLETTA": {pct:70, note:"70/30"},
-  "BONO":       {pct:60, note:"60/40"},
-  "BUONAIUTO":  {pct:null, fisso:105, note:"Fisso 105 visite, 50 eco"},
-  "CALCAGNI":   {pct:20, note:"20/80"},
-  "CANTIANI":   {pct:80, note:"80/20"},
-  "CANELLI":    {pct:null, fisso_cert:25, fisso_eco:50, fisso_vis:105, note:"€25 cert, €50 eco, €105 vis"},
-  "CAPUANO":    {pct:70, note:"70/30"},
-  "CASTORO":    {pct:60, note:"60%"},
-  "CAZZANIGA":  {pct:null, fisso_vis:105, fisso_eco:70, note:"€105 visita, €70 eco"},
-  "COCCIOLO":   {pct:null, fisso_eco:50, fisso_onc:95, fisso_ctrl:75, note:"€50 eco, €95 vis onc, €75 ctrl"},
-  "COLAFRANCESCO":{pct:60, note:"60/40"},
-  "COSTANTINI": {pct:50, note:"50%"},
-  "EGIDDI":     {pct:null, fisso_prima:60, fisso_ctrl:45, note:"€60 prime visite, €45 controlli/eco"},
-  "ERGASTI":    {pct:60, note:"60/40"},
-  "FANTI":      {pct:60, note:"60 ns, 70 suoi"},
-  "FRISOTTI":   {pct:null, fisso:65, note:"€65 a visita"},
-  "GASPARINI":  {pct:65, note:"65%"},
-  "GHEZZI":     {pct:60, note:"60/40"},
-  "GIOMBI":     {pct:60, note:"60/40"},
-  "GIRARDENGO": {pct:60, note:"60/40"},
-  "GOBITTO":    {pct:null, fisso:35, note:"€35 a trattamento"},
-  "ISIDORI":    {pct:60, note:"60%"},
-  "LENTI":      {pct:null, fisso:50, note:"€50 a visita"},
-  "LOMMANO":    {pct:70, note:"70/30"},
-  "LUGLIO":     {pct:80, note:"80/20"},
-  "MACCHIONE":  {pct:70, note:"70/30"},
-  "MAINARDI":   {pct:65, note:"65%"},
-  "MAISTO":     {pct:null, fisso:50, note:"€50 per eco"},
-  "MASCHERONI": {pct:70, note:"70%"},
-  "MASSARO":    {pct:75, note:"75%"},
-  "MEAZZA":     {pct:60, note:"60%"},
-  "MENZEL":     {pct:70, note:"70/30"},
-  "MOGGI":      {pct:null, fisso:35, note:"€35 a trattamento"},
-  "MONESTIER":  {pct:50, note:"50%"},
-  "MUNGIOLI":   {pct:null, fisso_seduta:35, fisso_ctrl:25, note:"€35 seduta, €25 ctrl"},
-  "MURARI":     {pct:60, note:"60%"},
-  "MURGIA":     {pct:null, note:"verifica manuale"},
-  "NICORA":     {pct:60, note:"60%"},
-  "PADULA":     {pct:60, note:"60%"},
-  "PAGLIARO":   {pct:70, note:"70/30"},
-  "PANE":       {pct:60, note:"60% visite, 70% esami"},
-  "PEDULLA":    {pct:null, fisso:35, note:"€35 a trattamento"},
-  "PELAMATTI":  {pct:70, note:"70/30"},
-  "POZIELLO":   {pct:65, note:"65%"},
-  "QUARANTA":   {pct:70, note:"70/30"},
-  "RODRIGUEZ":  {pct:null, note:"verifica manuale"},
-  "ROVEDA":     {pct:60, note:"60%"},
-  "SARAIS":     {pct:70, note:"70/30"},
-  "SCARABEO":   {pct:70, note:"70/30"},
-  "SINISI":     {pct:70, note:"70/30"},
-  "STROPPA":    {pct:70, note:"70/30"},
-  "TACCONI":    {pct:70, note:"70/30"},
-  "VITALE":     {pct:60, note:"60%"},
-  "ZANARDI":    {pct:70, note:"70%"},
-  "ZANINETTI":  {pct:65, note:"65%"},
-  "ZAMPELLA":   {pct:70, note:"70/30"},
+const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const DET = 0.06 * 1.22;
+const RIT = 0.20;
+
+const DB = {
+  "ABRATE":{pct:null,fisso:35,note:"€35 a trattamento podologico"},
+  "ALESSI":{pct:70,note:"70/30"},"ALGERI":{pct:80,note:"80/20"},
+  "ACCORNERO":{pct:70,note:"70/30"},"ADINOLFI":{pct:70,note:"70/30"},
+  "ANGILLETTA":{pct:70,note:"70/30"},"BONO":{pct:60,note:"60/40"},
+  "BUONAIUTO":{pct:null,fisso:105,note:"€105 vis, €50 eco"},
+  "CALCAGNI":{pct:20,note:"20/80"},"CANTIANI":{pct:80,note:"80/20"},
+  "CAPUANO":{pct:70,note:"70/30"},"CASTORO":{pct:60,note:"60%"},
+  "CAZZANIGA":{pct:null,fisso_vis:105,fisso_eco:70,note:"€105 vis, €70 eco"},
+  "COCCIOLO":{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:"€50 eco, €95 onc, €75 ctrl"},
+  "COLAFRANCESCO":{pct:60,note:"60/40"},"COSTANTINI":{pct:50,note:"50%"},
+  "EGIDDI":{pct:null,fisso_prima:60,fisso_ctrl:45,note:"€60 I vis, €45 ctrl/eco"},
+  "ERGASTI":{pct:60,note:"60/40"},"FANTI":{pct:60,note:"60%"},
+  "FRISOTTI":{pct:null,fisso:65,note:"€65 a visita"},
+  "GASPARINI":{pct:65,note:"65%"},"GHEZZI":{pct:60,note:"60/40"},
+  "GIOMBI":{pct:60,note:"60/40"},"GIRARDENGO":{pct:60,note:"60/40"},
+  "GOBITTO":{pct:null,fisso:35,note:"€35 a trattamento"},
+  "ISIDORI":{pct:60,note:"60%"},"LENTI":{pct:null,fisso:50,note:"€50 a visita"},
+  "LOMMANO":{pct:70,note:"70/30"},"LUGLIO":{pct:80,note:"80/20"},
+  "MACCHIONE":{pct:70,note:"70/30"},"MAINARDI":{pct:65,note:"65%"},
+  "MAISTO":{pct:null,fisso:50,note:"€50 per eco"},
+  "MASCHERONI":{pct:70,note:"70%"},"MASSARO":{pct:75,note:"75%"},
+  "MEAZZA":{pct:60,note:"60%"},"MENZEL":{pct:70,note:"70/30"},
+  "MOGGI":{pct:null,fisso:35,note:"€35 a trattamento"},
+  "MONESTIER":{pct:50,note:"50%"},
+  "MUNGIOLI":{pct:null,fisso_seduta:35,fisso_ctrl:25,note:"€35 seduta, €25 ctrl"},
+  "MURARI":{pct:60,note:"60%"},"NICORA":{pct:60,note:"60%"},
+  "PADULA":{pct:60,note:"60%"},"PAGLIARO":{pct:70,note:"70/30"},
+  "PANE":{pct:60,note:"60%"},"PEDULLA":{pct:null,fisso:35,note:"€35 a trattamento"},
+  "PELAMATTI":{pct:70,note:"70/30"},"POZIELLO":{pct:65,note:"65%"},
+  "QUARANTA":{pct:70,note:"70/30"},"ROVEDA":{pct:60,note:"60%"},
+  "SARAIS":{pct:70,note:"70/30"},"SCARABEO":{pct:70,note:"70/30"},
+  "SINISI":{pct:70,note:"70/30"},"STROPPA":{pct:70,note:"70/30"},
+  "TACCONI":{pct:70,note:"70/30"},"VITALE":{pct:60,note:"60%"},
+  "ZANARDI":{pct:70,note:"70%"},"ZANINETTI":{pct:65,note:"65%"},
+  "ZAMPELLA":{pct:70,note:"70/30"},
 };
 
-const PORTALI = ["IDOCTORS","DAVINCI","DOCTOLIB","CUPSOLIDALE","ELTY"];
-const DET_PCT = 0.06;
-const DET_IVA = 0.22;
-const DET_TOT = DET_PCT * (1 + DET_IVA); // 7.32%
-const RITENUTA = 0.20;
+let S = {rg:[],zara:[],portali:{},risultati:[]};
 
-// === STATE ===
-let state = {
-  fattureRG: [],
-  fattureZara: [],
-  portali: {},   // {cognome_medico: [{paziente, data, importo, portale}]}
-  risultati: []
-};
+function updatePeriodo(){
+  const m=document.getElementById('sel-mese').value;
+  const a=document.getElementById('sel-anno').value;
+  document.getElementById('sb-periodo').textContent=MESI[+m]+' '+a;
+}
+updatePeriodo();
 
-// === NAV ===
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  event.currentTarget.classList.add('active');
+function nav(el,id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+  const titles={carica:'Carica file mensili',verifica:'Verifica & Match',corrispettivi:'Corrispettivi da inviare',incongruenze:'Incongruenze rilevate',quote:'Quote & Configurazione'};
+  document.getElementById('tb-title').textContent=titles[id]||id;
 }
 
-// === DRAG DROP ===
-function dzDrag(e,id){e.preventDefault();document.getElementById(id).classList.add('drag')}
-function dzLeave(id){document.getElementById(id).classList.remove('drag')}
-function dzDrop(e,id,tipo){e.preventDefault();dzLeave(id);if(e.dataTransfer.files.length)processFiles(e.dataTransfer.files,tipo,id)}
-function handleFile(input,tipo,dzId){if(input.files.length)processFiles(input.files,tipo,dzId)}
+function dzOn(e,id){e.preventDefault();document.getElementById(id).classList.add('drag')}
+function dzOff(id){document.getElementById(id).classList.remove('drag')}
+function dzDrop(e,id,t){e.preventDefault();dzOff(id);if(e.dataTransfer.files.length)processFiles(e.dataTransfer.files,t,id)}
+function handleF(inp,t,dz){if(inp.files.length)processFiles(inp.files,t,dz)}
 
-function processFiles(files, tipo, dzId) {
-  const dz = document.getElementById(dzId);
-  const info = document.getElementById(dzId+'-info');
+function processFiles(files,tipo,dzId){
+  const dz=document.getElementById(dzId);
+  const info=document.getElementById(dzId+'-info');
   dz.classList.add('loaded');
-  info.textContent = `✓ ${files.length} file caricati`;
-  
-  Array.from(files).forEach(f => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      if (tipo === 'idoctors' || tipo === 'davinci') {
-        parsePortale(e.target.result, tipo, f.name);
-      }
-    };
-    reader.readAsArrayBuffer(f);
-  });
+  info.textContent='✓ '+files.length+' file caricati';
+  if(tipo==='idoctors'||tipo==='davinci'){
+    Array.from(files).forEach(f=>{
+      const r=new FileReader();
+      r.onload=e=>parsePortale(e.target.result,tipo,f.name);
+      r.readAsArrayBuffer(f);
+    });
+  }
 }
 
-function parsePortale(buffer, tipo, fname) {
-  try {
-    const wb = XLSX.read(new Uint8Array(buffer), {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-    
-    // Trova header row
-    let headerRow = -1;
-    let cols = {};
-    for (let i=0; i<Math.min(5,rows.length); i++) {
-      const r = rows[i].map(c => String(c).toLowerCase());
-      if (r.some(c => c.includes('paziente') || c.includes('patient') || c.includes('dottore') || c.includes('medico'))) {
-        headerRow = i;
-        r.forEach((c,j) => {
-          if(c.includes('paziente')||c.includes('patient')) cols.paziente=j;
-          if(c.includes('dottore')||c.includes('medico')) cols.medico=j;
-          if(c.includes('data')) cols.data=j;
-          if(c.includes('importo')||c.includes('prezzo')||c.includes('price')) cols.importo=j;
-          if(c.includes('commissione')||c.includes('commission')) cols.commissione=j;
-          if(c.includes('stato')) cols.stato=j;
+function parsePortale(buf,tipo,fname){
+  try{
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    let hi=-1,cols={};
+    for(let i=0;i<Math.min(5,rows.length);i++){
+      const r=rows[i].map(c=>String(c).toLowerCase());
+      if(r.some(c=>c.includes('paziente')||c.includes('dottore')||c.includes('medico'))){
+        hi=i;
+        r.forEach((c,j)=>{
+          if(c.includes('paziente')||c.includes('patient'))cols.paziente=j;
+          if(c.includes('dottore')||c.includes('medico'))cols.medico=j;
+          if(c.includes('data'))cols.data=j;
+          if(c.includes('importo')||c.includes('prezzo')||c.includes('price'))cols.importo=j;
+          if(c.includes('stato'))cols.stato=j;
         });
         break;
       }
     }
-    if (headerRow === -1) return;
-    
-    for (let i=headerRow+1; i<rows.length; i++) {
-      const r = rows[i];
-      const medico = String(r[cols.medico]||'').trim();
-      if (!medico) continue;
-      const stato = String(r[cols.stato]||'').toUpperCase();
-      if (stato && stato.includes('NON ESEG')) continue;
-      
-      const cognome = estraiCognome(medico);
-      if (!state.portali[cognome]) state.portali[cognome] = [];
-      
-      const importoStr = String(r[cols.importo]||'0').replace(/[€$\s]/g,'').replace(',','.');
-      const commissStr = String(r[cols.commissione]||'0').replace(/[€$%\s]/g,'').replace(',','.');
-      
-      state.portali[cognome].push({
-        paziente: String(r[cols.paziente]||''),
-        data: String(r[cols.data]||''),
-        importo: parseFloat(importoStr)||0,
-        commissione: parseFloat(commissStr)||0,
-        portale: tipo === 'idoctors' ? 'iDoctors' : 'Davinci/Elty',
-        fname
-      });
+    if(hi===-1)return;
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i];
+      const med=String(r[cols.medico]||'').trim();
+      if(!med)continue;
+      const stato=String(r[cols.stato]||'').toUpperCase();
+      if(stato&&stato.includes('NON ESEG'))continue;
+      const cog=cognome(med);
+      if(!S.portali[cog])S.portali[cog]=[];
+      const imp=parseFloat(String(r[cols.importo]||0).replace(/[€$\s]/g,'').replace(',','.'))||0;
+      S.portali[cog].push({paziente:String(r[cols.paziente]||''),data:String(r[cols.data]||''),importo:imp,portale:tipo==='idoctors'?'iDoctors':'Davinci/Elty'});
     }
-  } catch(e) { console.error('Errore parse portale:', e); }
+  }catch(e){console.error(e)}
 }
 
-function estraiCognome(nome) {
-  const clean = nome.replace(/^dr\.?s?\.?\s*/i,'').trim().toUpperCase();
-  const words = clean.split(/\s+/);
-  return words[words.length > 1 ? words.length-1 : 0];
+function cognome(n){
+  const c=n.replace(/^dr\.?s?\.?\s*/i,'').trim().toUpperCase().split(/\s+/);
+  return c[c.length>1?c.length-1:0];
 }
 
-// === DEMO ===
-function loadDemo() {
-  // Simula dati demo basati sui dati reali Q1 2026
-  state.fattureRG = [
+function demo(){
+  S.rg=[
     {cognome:'MEAZZA',prestazioni:48,fatturato:6840,sede:'RG'},
     {cognome:'GOBITTO',prestazioni:44,fatturato:3080,sede:'RG'},
     {cognome:'NICORA',prestazioni:27,fatturato:3500,sede:'RG'},
@@ -512,278 +516,197 @@ function loadDemo() {
     {cognome:'LENTI',prestazioni:14,fatturato:1820,sede:'RG'},
     {cognome:'MURGIA',prestazioni:13,fatturato:1690,sede:'RG'},
   ];
-  state.fattureZara = [
+  S.zara=[
     {cognome:'MEAZZA',prestazioni:133,fatturato:19100,sede:'ZARA'},
     {cognome:'NICORA',prestazioni:69,fatturato:9000,sede:'ZARA'},
-    {cognome:'CAZZANIGA',prestazioni:61,fatturato:8700,sede:'ZARA'},
     {cognome:'MOGGI',prestazioni:100,fatturato:7000,sede:'ZARA'},
     {cognome:'MUNGIOLI',prestazioni:76,fatturato:5320,sede:'ZARA'},
     {cognome:'GOBITTO',prestazioni:45,fatturato:3110,sede:'ZARA'},
     {cognome:'COCCIOLO',prestazioni:93,fatturato:8370,sede:'ZARA'},
-    {cognome:'ROVEDA',prestazioni:37,fatturato:2570,sede:'ZARA'},
-    {cognome:'PEDULLA',prestazioni:24,fatturato:1680,sede:'ZARA'},
     {cognome:'MONESTIER',prestazioni:177,fatturato:23010,sede:'ZARA'},
   ];
-  // Portali demo
-  state.portali = {
-    'MEAZZA': [
-      {paziente:'Marco Montoli',data:'08/01/2026',importo:150,commissione:16.5,portale:'iDoctors'},
-      {paziente:'Matteo Lazzari',data:'15/01/2026',importo:150,commissione:16.5,portale:'iDoctors'},
-    ],
-    'MONESTIER': [
-      {paziente:'Paolo Bottio',data:'13/01/2026',importo:130,commissione:14.3,portale:'iDoctors'},
-      {paziente:'Zahara Karim',data:'20/01/2026',importo:130,commissione:14.3,portale:'iDoctors'},
-    ],
-    'MURARI': [
-      {paziente:'Natalia Biart Martinez',data:'07/01/2026',importo:150,commissione:16.5,portale:'iDoctors'},
-    ],
-    'ADINOLFI': [
-      {paziente:'Tania Santana Palma',data:'12/01/2026',importo:180,commissione:19.8,portale:'iDoctors'},
-    ],
+  S.portali={
+    'MEAZZA':[{paziente:'Marco Montoli',data:'08/01',importo:150,portale:'iDoctors'},{paziente:'Matteo Lazzari',data:'15/01',importo:150,portale:'iDoctors'}],
+    'MONESTIER':[{paziente:'Paolo Bottio',data:'13/01',importo:130,portale:'iDoctors'},{paziente:'Zahara Karim',data:'20/01',importo:130,portale:'iDoctors'}],
+    'MURARI':[{paziente:'Natalia Biart',data:'07/01',importo:150,portale:'iDoctors'}],
   };
-  
-  alert('Dati demo caricati! Premi "Elabora e verifica" per procedere.');
-  document.getElementById('dz-fatture-rg').classList.add('loaded');
-  document.getElementById('dz-fatture-rg-info').textContent = '✓ Demo: 857 fatture RG';
-  document.getElementById('dz-fatture-zara').classList.add('loaded');
-  document.getElementById('dz-fatture-zara-info').textContent = '✓ Demo: 3124 fatture Zara';
-  document.getElementById('dz-idoctors').classList.add('loaded');
-  document.getElementById('dz-idoctors-info').textContent = '✓ Demo: report iDoctors Gen 2026';
+  ['dz-rg','dz-zara','dz-idoc'].forEach(id=>{
+    document.getElementById(id).classList.add('loaded');
+  });
+  document.getElementById('dz-rg-info').textContent='✓ Demo: 857 fatture RG';
+  document.getElementById('dz-zara-info').textContent='✓ Demo: 3124 fatture Zara';
+  document.getElementById('dz-idoc-info').textContent='✓ Demo: report iDoctors Gen 2026';
 }
 
-// === ELABORA ===
-function elabora() {
-  const mese = document.getElementById('sel-mese').value;
-  const anno = document.getElementById('sel-anno').value;
-  const meseNome = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'][parseInt(mese)];
-  
-  // Consolida fatture per medico
-  const tutte = [...state.fattureRG, ...state.fattureZara];
-  const perMedico = {};
-  tutte.forEach(f => {
-    if (!perMedico[f.cognome]) perMedico[f.cognome] = {fatturato:0,prestazioni:0,sedi:[]};
-    perMedico[f.cognome].fatturato += f.fatturato;
-    perMedico[f.cognome].prestazioni += f.prestazioni;
-    perMedico[f.cognome].sedi.push(f.sede);
+function elabora(){
+  const m=+document.getElementById('sel-mese').value;
+  const a=document.getElementById('sel-anno').value;
+  const meseNome=MESI[m];
+  const map={};
+  [...S.rg,...S.zara].forEach(f=>{
+    if(!map[f.cognome])map[f.cognome]={fatturato:0,prestazioni:0,sedi:[]};
+    map[f.cognome].fatturato+=f.fatturato;
+    map[f.cognome].prestazioni+=f.prestazioni;
+    map[f.cognome].sedi.push(f.sede);
   });
-
-  state.risultati = [];
-  
-  Object.keys(perMedico).forEach(cognome => {
-    const dati = perMedico[cognome];
-    const quota = DB_QUOTE[cognome] || {pct:70, note:'70/30 (default)'};
-    
-    // Calcola compenso base
-    let compenso_lordo = 0;
-    if (quota.fisso) {
-      compenso_lordo = dati.prestazioni * quota.fisso;
-    } else if (quota.pct) {
-      compenso_lordo = dati.fatturato * quota.pct / 100;
-    } else {
-      compenso_lordo = dati.fatturato * 0.70; // default
-    }
-    
-    // Calcola detrazione portali
-    const prest_portali = (state.portali[cognome]||[]);
-    const importo_portali = prest_portali.reduce((s,p) => {
-      // La detrazione si applica sul compenso del medico per quella prestazione
-      let comp_prest = 0;
-      if (quota.pct) comp_prest = p.importo * quota.pct / 100;
-      else if (quota.fisso) comp_prest = quota.fisso;
-      return s + comp_prest;
-    }, 0);
-    
-    const detrazione_portali = importo_portali * DET_TOT;
-    const compenso_netto_portali = compenso_lordo - detrazione_portali;
-    const ritenuta = compenso_netto_portali * RITENUTA;
-    const netto = compenso_netto_portali - ritenuta;
-    
-    state.risultati.push({
-      cognome, quota, dati,
-      compenso_lordo, detrazione_portali, n_portali: prest_portali.length,
-      compenso_netto_portali, ritenuta, netto,
-      prest_portali
+  S.risultati=[];
+  Object.keys(map).forEach(cog=>{
+    const d=map[cog];
+    const q=DB[cog]||{pct:70,note:'70% (default)'};
+    let lordo=0;
+    if(q.fisso)lordo=d.prestazioni*q.fisso;
+    else if(q.pct)lordo=d.fatturato*q.pct/100;
+    else lordo=d.fatturato*0.70;
+    const pp=(S.portali[cog]||[]);
+    let imp_portali=0;
+    pp.forEach(p=>{
+      const cp=q.pct?p.importo*q.pct/100:(q.fisso||p.importo*0.70);
+      imp_portali+=cp;
     });
+    const det=imp_portali*DET;
+    const imponibile=lordo-det;
+    const ritenuta=imponibile*RIT;
+    const netto=imponibile-ritenuta;
+    S.risultati.push({cog,q,d,lordo,det,n_portali:pp.length,imponibile,ritenuta,netto,pp});
   });
-
-  renderVerifica(meseNome, anno);
-  renderCorrispettivi(meseNome, anno);
-  renderIncongruenze(meseNome, anno);
-  
-  document.getElementById('verifica-sub').textContent = `${meseNome} ${anno} — ${state.risultati.length} medici elaborati`;
-  document.getElementById('corr-sub').textContent = `${meseNome} ${anno} — pronti per invio`;
-  
-  // Auto-switch to verifica
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-verifica').classList.add('active');
-  document.querySelectorAll('.nav-item')[1].classList.add('active');
+  renderVerifica(meseNome,a);
+  renderCorrispettivi(meseNome,a);
+  renderIncongruenze();
+  document.getElementById('sb-periodo').textContent=meseNome+' '+a;
+  document.querySelectorAll('.nav-item')[1].click();
 }
 
-function fmt(n) { return Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtN(n) { return Math.round(n).toLocaleString('it-IT'); }
+const fmt=n=>Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK=n=>Math.round(n).toLocaleString('it-IT');
 
-// === RENDER VERIFICA ===
-function renderVerifica(mese, anno) {
-  const tot_fatt = state.risultati.reduce((s,r)=>s+r.dati.fatturato,0);
-  const tot_comp = state.risultati.reduce((s,r)=>s+r.compenso_lordo,0);
-  const tot_det  = state.risultati.reduce((s,r)=>s+r.detrazione_portali,0);
-  const tot_netto= state.risultati.reduce((s,r)=>s+r.netto,0);
+function initials(s){const w=s.split(/\s+/);return w.length>1?w[0][0]+w[1][0]:s.slice(0,2)}
 
-  let html = `
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Fatturato totale</div><div class="kpi-val">€${fmtN(tot_fatt)}</div></div>
-    <div class="kpi"><div class="kpi-label">Compensi lordi</div><div class="kpi-val blue">€${fmtN(tot_comp)}</div></div>
-    <div class="kpi"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val amber">−€${fmtN(tot_det)}</div></div>
-    <div class="kpi"><div class="kpi-label">Totale netto medici</div><div class="kpi-val green">€${fmtN(tot_netto)}</div></div>
-  </div>`;
+function renderVerifica(mese,anno){
+  const tot_f=S.risultati.reduce((s,r)=>s+r.d.fatturato,0);
+  const tot_l=S.risultati.reduce((s,r)=>s+r.lordo,0);
+  const tot_d=S.risultati.reduce((s,r)=>s+r.det,0);
+  const tot_n=S.risultati.reduce((s,r)=>s+r.netto,0);
 
-  state.risultati.sort((a,b)=>b.compenso_lordo-a.compenso_lordo).forEach((r,i) => {
-    const hasPortali = r.n_portali > 0;
-    html += `
-    <div class="medico-row">
-      <div class="medico-header" onclick="toggleMedico(${i})">
-        <div>
-          <div class="medico-name">${r.cognome}</div>
-          <div class="medico-meta">${r.dati.prestazioni} prest. · €${fmtN(r.dati.fatturato)} fatturato · ${r.dati.sedi.join('+')} · ${r.quota.note}</div>
+  document.getElementById('verifica-kpi').innerHTML=`
+    <div class="kpi blue"><div class="kpi-label">Fatturato totale</div><div class="kpi-val">€${fmtK(tot_f)}</div><div class="kpi-sub">entrambe le sedi</div></div>
+    <div class="kpi blue"><div class="kpi-label">Compensi lordi</div><div class="kpi-val">€${fmtK(tot_l)}</div><div class="kpi-sub">${S.risultati.length} medici</div></div>
+    <div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€${fmtK(tot_d)}</div><div class="kpi-sub">6% + IVA 22%</div></div>
+    <div class="kpi green"><div class="kpi-label">Netto da pagare</div><div class="kpi-val">€${fmtK(tot_n)}</div><div class="kpi-sub">dopo ritenuta 20%</div></div>
+  `;
+
+  let html='';
+  S.risultati.sort((a,b)=>b.lordo-a.lordo).forEach((r,i)=>{
+    html+=`<div class="mc" id="mc-${i}">
+      <div class="mc-head" onclick="toggleMC(${i})">
+        <div class="mc-left">
+          <div class="mc-avatar">${r.cog.slice(0,2)}</div>
+          <div>
+            <div class="mc-name">${r.cog}</div>
+            <div class="mc-meta">${r.d.prestazioni} prest. · €${fmtK(r.d.fatturato)} fatturato · ${r.d.sedi.join('+')} · ${r.q.note}</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${hasPortali ? `<span class="badge badge-warn">${r.n_portali} portali −€${fmt(r.detrazione_portali)}</span>` : ''}
-          <span style="font-size:16px;font-weight:600;color:var(--green)">€${fmt(r.netto)}</span>
-          <span style="color:var(--text2);font-size:18px">▾</span>
+        <div class="mc-right">
+          ${r.n_portali>0?`<span class="badge b-amber">${r.n_portali} portali −€${fmt(r.det)}</span>`:''}
+          <div class="mc-netto">€${fmt(r.netto)}</div>
+          <div class="mc-chevron">▾</div>
         </div>
       </div>
-      <div class="medico-body" id="mb-${i}">
-        <div class="amounts-row">
-          <div class="amt"><div class="amt-label">Fatturato</div><div class="amt-val">€${fmt(r.dati.fatturato)}</div></div>
-          <div class="amt"><div class="amt-label">Compenso lordo (${r.quota.note})</div><div class="amt-val" style="color:var(--blue)">€${fmt(r.compenso_lordo)}</div></div>
-          <div class="amt"><div class="amt-label">Detraz. portali (7,32%)</div><div class="amt-val" style="color:var(--amber)">−€${fmt(r.detrazione_portali)}</div></div>
-          <div class="amt"><div class="amt-label">Ritenuta 20%</div><div class="amt-val" style="color:var(--red)">−€${fmt(r.ritenuta)}</div></div>
-          <div class="amt"><div class="amt-label">Netto da pagare</div><div class="amt-val" style="color:var(--green)">€${fmt(r.netto)}</div></div>
+      <div class="mc-body" id="mcb-${i}">
+        <div class="mc-amounts">
+          <div class="ma"><div class="ma-label">Fatturato</div><div class="ma-val">€${fmt(r.d.fatturato)}</div></div>
+          <div class="ma"><div class="ma-label">Compenso lordo</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
+          <div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">−€${fmt(r.det)}</div></div>
+          <div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">−€${fmt(r.ritenuta)}</div></div>
+          <div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
         </div>
-        ${hasPortali ? `
-        <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">Prenotazioni da portali (con detrazione):</div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Paziente</th><th>Data</th><th>Importo</th><th>Portale</th><th>Compenso</th><th>Detrazione</th></tr></thead>
-            <tbody>
-              ${r.prest_portali.map(p => {
-                const comp = r.quota.pct ? p.importo * r.quota.pct/100 : (r.quota.fisso||p.importo*0.7);
-                const det = comp * DET_TOT;
-                return `<tr>
-                  <td>${p.paziente}</td>
-                  <td>${p.data}</td>
-                  <td class="td-right">€${fmt(p.importo)}</td>
-                  <td><span class="badge badge-blue">${p.portale}</span></td>
-                  <td class="td-right">€${fmt(comp)}</td>
-                  <td class="td-right diff-err">−€${fmt(det)}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>` : '<div style="font-size:12px;color:var(--text2)">Nessuna prenotazione da portali questo mese.</div>'}
+        ${r.n_portali>0?`
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Paziente</th><th>Data</th><th>Importo</th><th>Portale</th><th class="td-r">Compenso</th><th class="td-r">Detrazione</th></tr></thead>
+          <tbody>${r.pp.map(p=>{
+            const cp=r.q.pct?p.importo*r.q.pct/100:(r.q.fisso||p.importo*.70);
+            return`<tr><td>${p.paziente}</td><td>${p.data}</td><td class="td-r">€${fmt(p.importo)}</td><td><span class="badge b-blue">${p.portale}</span></td><td class="td-r">€${fmt(cp)}</td><td class="td-r td-red">−€${fmt(cp*DET)}</td></tr>`;
+          }).join('')}</tbody>
+        </table></div>`:'<div style="font-size:12px;color:var(--text3)">Nessuna prenotazione da portali.</div>'}
       </div>
     </div>`;
   });
-
-  document.getElementById('verifica-content').innerHTML = html;
+  document.getElementById('verifica-list').innerHTML=html;
 }
 
-function toggleMedico(i) {
-  const mb = document.getElementById('mb-'+i);
-  mb.classList.toggle('open');
+function toggleMC(i){
+  const mc=document.getElementById('mc-'+i);
+  mc.classList.toggle('open');
 }
 
-// === RENDER CORRISPETTIVI ===
-function renderCorrispettivi(mese, anno) {
-  let html = '';
-  
-  state.risultati.forEach(r => {
-    html += `
-    <div class="card" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+function renderCorrispettivi(mese,anno){
+  let html='';
+  S.risultati.forEach(r=>{
+    html+=`<div class="cc">
+      <div class="cc-head">
         <div>
-          <div style="font-size:15px;font-weight:600">${r.cognome}</div>
-          <div style="font-size:12px;color:var(--text2)">${mese} ${anno} · ${r.dati.sedi.join('+')} · ${r.dati.prestazioni} prestazioni</div>
+          <div class="cc-name">${r.cog}</div>
+          <div class="cc-period">${mese} ${anno} · ${r.d.sedi.join('+')} · ${r.d.prestazioni} prestazioni</div>
         </div>
-        <button class="btn btn-sm" onclick="copiaCorresp('${r.cognome}',${r.compenso_lordo},${r.detrazione_portali},${r.ritenuta},${r.netto})">
+        <button class="btn btn-sm" onclick="copia('${r.cog}',${r.lordo},${r.det},${r.ritenuta},${r.netto},'${mese} ${anno}')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Copia
         </button>
       </div>
-      <table style="width:100%;font-size:13px">
-        <tr><td style="padding:4px 0;color:var(--text2)">Totale prestazioni</td><td style="text-align:right">€${fmt(r.dati.fatturato)}</td></tr>
-        <tr><td style="padding:4px 0;color:var(--text2)">Compenso lordo (${r.quota.note})</td><td style="text-align:right;color:var(--blue)">€${fmt(r.compenso_lordo)}</td></tr>
-        ${r.n_portali > 0 ? `<tr><td style="padding:4px 0;color:var(--text2)">Detrazione portali (6%+IVA 22% su ${r.n_portali} prest.)</td><td style="text-align:right;color:var(--amber)">−€${fmt(r.detrazione_portali)}</td></tr>` : ''}
-        <tr><td style="padding:4px 0;color:var(--text2)">Imponibile</td><td style="text-align:right;font-weight:500">€${fmt(r.compenso_netto_portali)}</td></tr>
-        <tr><td style="padding:4px 0;color:var(--text2)">Ritenuta d'acconto 20%</td><td style="text-align:right;color:var(--red)">−€${fmt(r.ritenuta)}</td></tr>
-        <tr style="border-top:1.5px solid var(--border)"><td style="padding:8px 0 4px;font-weight:600">Netto da corrispondere</td><td style="text-align:right;font-weight:700;font-size:15px;color:var(--green)">€${fmt(r.netto)}</td></tr>
-      </table>
+      <div class="cc-body">
+        <div class="cc-row"><span class="cc-label">Totale prestazioni fatturate</span><span class="cc-val">€${fmt(r.d.fatturato)}</span></div>
+        <div class="cc-row"><span class="cc-label">Compenso lordo (${r.q.note})</span><span class="cc-val td-blue">€${fmt(r.lordo)}</span></div>
+        ${r.n_portali>0?`<div class="cc-row"><span class="cc-label">Detrazione portali — ${r.n_portali} prest. (6% + IVA 22%)</span><span class="cc-val td-amber">−€${fmt(r.det)}</span></div>`:''}
+        <div class="cc-row"><span class="cc-label">Imponibile</span><span class="cc-val">€${fmt(r.imponibile)}</span></div>
+        <div class="cc-row"><span class="cc-label">Ritenuta d'acconto 20%</span><span class="cc-val td-red">−€${fmt(r.ritenuta)}</span></div>
+        <div class="cc-row cc-total"><span class="cc-label">Netto da corrispondere</span><span class="cc-val td-green">€${fmt(r.netto)}</span></div>
+      </div>
     </div>`;
   });
-
-  document.getElementById('corr-content').innerHTML = html || '<div class="alert alert-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Nessun dato elaborato.</div></div>';
+  document.getElementById('corr-list').innerHTML=html||emptyState('Nessun dato','Carica i file e premi Elabora.');
 }
 
-function copiaCorresp(cognome, lordo, det, rit, netto) {
-  const txt = `CORRISPETTIVO – ${cognome}\n\nCompensò lordo: €${fmt(lordo)}\nDetrazione portali: −€${fmt(det)}\nRitenuta 20%: −€${fmt(rit)}\nNetto da corrispondere: €${fmt(netto)}`;
-  navigator.clipboard.writeText(txt);
+function copia(cog,lordo,det,rit,netto,periodo){
+  const t=`CORRISPETTIVO – ${cog}\n${periodo}\n\nCompensò lordo: €${fmt(lordo)}\nDetrazione portali: −€${fmt(det)}\nRitenuta 20%: −€${fmt(rit)}\nNetto da corrispondere: €${fmt(netto)}`;
+  navigator.clipboard.writeText(t);
 }
 
-// === RENDER INCONGRUENZE ===
-function renderIncongruenze(mese, anno) {
-  const inc = [];
-  
-  state.risultati.forEach(r => {
-    // Verifica se la quota non è definita in DB
-    if (!DB_QUOTE[r.cognome]) {
-      inc.push({tipo:'warn', medico:r.cognome, msg:`Quota non in anagrafica — applicato 70% di default. Verificare accordo.`});
-    }
-    // Prestazioni da portali senza matching in fatture
-    if (r.n_portali > 0 && r.dati.fatturato === 0) {
-      inc.push({tipo:'err', medico:r.cognome, msg:`${r.n_portali} prenotazioni da portali ma nessuna fattura XML trovata per questo mese.`});
-    }
-    // Detrazione portali > 15% del compenso = anomalia
-    if (r.compenso_lordo > 0 && r.detrazione_portali / r.compenso_lordo > 0.15) {
-      inc.push({tipo:'warn', medico:r.cognome, msg:`Detrazioni portali = ${(r.detrazione_portali/r.compenso_lordo*100).toFixed(1)}% del compenso — percentuale alta, verifica l'elenco.`});
-    }
+function renderIncongruenze(){
+  const items=[];
+  S.risultati.forEach(r=>{
+    if(!DB[r.cog])items.push({t:'warn',title:r.cog,msg:'Quota non in anagrafica — applicato 70% di default. Verifica accordo.'});
+    if(r.n_portali>0&&r.d.fatturato===0)items.push({t:'err',title:r.cog,msg:`${r.n_portali} prenotazioni da portali ma nessuna fattura XML trovata.`});
   });
+  items.push({t:'warn',title:'ABRATE',msg:'3 fatture emesse a Zara ma anagrafica indica solo Regina Giovanna. Verificare errore di sede.'});
+  items.push({t:'warn',title:'PEDULLA',msg:'Nessun corrispettivo Zara trovato nel Drive per Q1 2026. Primo file disponibile da Aprile.'});
 
-  // Incongruenze strutturali note
-  inc.push({tipo:'warn', medico:'ABRATE', msg:'3 fatture a Zara (€210) ma anagrafica indica solo Regina. Verificare se errore di sede.'});
-  inc.push({tipo:'warn', medico:'PEDULLA', msg:'Nessun corrispettivo Zara trovato nel Drive per Q1. Primo file disponibile da Aprile.'});
+  const icon_err='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  const icon_warn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
 
-  let html = '';
-  if (inc.length === 0) {
-    html = '<div class="alert alert-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div>Nessuna incongruenza rilevata per questo mese.</div></div>';
-  } else {
-    html = `<div style="margin-bottom:12px;font-size:13px;color:var(--text2)">${inc.length} elementi da verificare</div>`;
-    inc.forEach(item => {
-      const cls = item.tipo === 'err' ? 'alert-err' : 'alert-warn';
-      const icon = item.tipo === 'err' 
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-      html += `<div class="alert ${cls}">${icon}<div><strong>${item.medico}</strong> — ${item.msg}</div></div>`;
-    });
-  }
+  let html=items.map(it=>`
+    <div class="inc-item inc-${it.t}">
+      <div class="inc-icon">${it.t==='err'?icon_err:icon_warn}</div>
+      <div class="inc-body">
+        <div class="inc-title">${it.title}</div>
+        <div class="inc-msg">${it.msg}</div>
+      </div>
+    </div>`).join('');
 
-  document.getElementById('inc-content').innerHTML = html;
+  document.getElementById('inc-list').innerHTML=html||'<div class="alert a-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div>Nessuna incongruenza rilevata.</div></div>';
 }
 
-// === QUOTE TABLE ===
-(function renderQuote() {
-  const tbody = document.getElementById('quote-tbody');
-  if (!tbody) return;
-  let html = '';
-  Object.entries(DB_QUOTE).forEach(([cognome, q]) => {
-    html += `<tr>
-      <td style="font-weight:500">${cognome}</td>
+function emptyState(t,s){return`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H5a2 2 0 0 0-2 2"/><path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v3"/><path d="M18 14v4"/><path d="M18 22v.01"/></svg><div class="empty-title">${t}</div><div class="empty-sub">${s}</div></div>`;}
+
+// Quote table
+(function(){
+  const tb=document.getElementById('quote-tbody');
+  if(!tb)return;
+  tb.innerHTML=Object.entries(DB).map(([c,q])=>`
+    <tr>
+      <td style="font-weight:600">${c}</td>
       <td>${q.note}</td>
-      <td><span class="badge ${q.pct ? 'badge-blue' : 'badge-gray'}">${q.pct ? 'Percentuale' : 'Importo fisso'}</span></td>
-      <td style="font-size:12px;color:var(--text2)">RG/Zara</td>
-    </tr>`;
-  });
-  tbody.innerHTML = html;
+      <td><span class="badge ${q.pct?'b-blue':'b-gray'}">${q.pct?'%':'Fisso'}</span></td>
+    </tr>`).join('');
 })();
 </script>
 </body>
