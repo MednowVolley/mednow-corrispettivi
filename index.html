@@ -671,8 +671,8 @@ function elabora(){
     let lordo=0;
     if(q.tipo==='ginecologa' && d.dettaglio){
       // Ginecologhe: % sulla visita + €15 fisso sui tamponi
-      const imp_tamponi = d.dettaglio.filter(r=>r.desc.toLowerCase().includes('tampone')).reduce((s,r)=>s+r.imp,0);
-      const n_tamponi = d.dettaglio.filter(r=>r.desc.toLowerCase().includes('tampone')).length;
+      const imp_tamponi = d.dettaglio.filter(r=>isTampone(r.desc)).reduce((s,r)=>s+r.imp,0);
+      const n_tamponi = d.dettaglio.filter(r=>isTampone(r.desc)).length;
       const imp_visite = d.fatturato - imp_tamponi;
       lordo = (imp_visite * q.pct/100) + (n_tamponi * q.fisso_tampone);
     } else if(q.fisso){
@@ -709,11 +709,16 @@ const fmtK=n=>Math.round(n).toLocaleString('it-IT');
 
 function initials(s){const w=s.split(/\s+/);return w.length>1?w[0][0]+w[1][0]:s.slice(0,2)}
 
+function isTampone(desc){
+  const d = desc.toLowerCase();
+  return d.includes('tampone') || d.includes('pap test') || d.includes('pap-test') || d.includes('hpv');
+}
+
 function ginecologaInfo(r){
   if(r.q.tipo!=='ginecologa' || !r.d.dettaglio) return '';
-  const nTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).length;
+  const nTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).length;
   if(nTamp===0) return '';
-  const impTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).reduce((s,p)=>s+p.imp,0);
+  const impTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).reduce((s,p)=>s+p.imp,0);
   const impVisite = r.d.fatturato - impTamp;
   return '<div class="alert a-info" style="margin-bottom:12px;font-size:12px">'
     +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
