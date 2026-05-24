@@ -210,6 +210,15 @@ input[type=file]{display:none}
 .toast{position:fixed;bottom:20px;right:20px;background:#1c2128;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;display:flex;align-items:center;gap:8px}
 .toast.show{opacity:1}
 
+/* ── STAMPA ── */
+@media print {
+  .sidebar,.topbar,.topbar-actions,.cf-export-bar,.btn,.nav-item { display:none!important; }
+  .main { overflow:visible!important; }
+  .content { padding:0!important; }
+  .cf-doc { break-inside:avoid; margin-bottom:20px; box-shadow:none!important; border:1px solid #ccc!important; }
+  .page { display:block!important; }
+  #page-corrispettivi { display:block!important; }
+}
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -377,9 +386,16 @@ input[type=file]{display:none}
           <div class="dz-sub">Report portali XLSX — anche multipli</div>
           <div class="dz-info" id="dz-dav-info"></div>
         </div>
+        <div class="dz" id="dz-xls" onclick="document.getElementById('fi-xls').click()" ondragover="dzOn(event,'dz-xls')" ondragleave="dzOff('dz-xls')" ondrop="dzDrop(event,'dz-xls','xls_corr')" style="grid-column:1/-1;border-style:solid;border-color:var(--blue);background:var(--blue-dim)">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <div class="dz-title" style="color:var(--blue)">File XLS Corrispettivi medici</div>
+          <div class="dz-sub">Carica tutti gli XLS del mese — genera il corrispettivo formale completo con ogni paziente</div>
+          <div class="dz-info" id="dz-xls-info"></div>
+        </div>
       </div>
 
       <input type="file" id="fi-rg" accept=".zip" onchange="handleF(this,'rg','dz-rg')">
+      <input type="file" id="fi-xls" accept=".xls,.xlsx" multiple onchange="handleF(this,'xls_corr','dz-xls')">
       <input type="file" id="fi-zara" accept=".zip" onchange="handleF(this,'zara','dz-zara')">
       <input type="file" id="fi-idoc" accept=".xlsx,.xls" multiple onchange="handleF(this,'idoctors','dz-idoc')">
       <input type="file" id="fi-dav" accept=".xlsx,.xls" multiple onchange="handleF(this,'davinci','dz-dav')">
@@ -559,7 +575,7 @@ const DB = {
   "ZAMPELLA":{pct:70,note:"70/30"},
 };
 
-let S = {rg:[],zara:[],portali:{},risultati:[]};
+let S = {rg:[],zara:[],portali:{},risultati:[],xls_corr:{}};
 
 function updatePeriodo(){
   const m=document.getElementById('sel-mese').value;
@@ -591,6 +607,14 @@ function processFiles(files,tipo,dzId){
   const info=document.getElementById(dzId+'-info');
   dz.classList.add('loaded');
   info.textContent='✓ '+files.length+' file caricati';
+  if(tipo==='xls_corr'){
+    Array.from(files).forEach(function(f){
+      var r=new FileReader();
+      r.onload=function(e){parseXLSCorr(e.target.result,f.name);};
+      r.readAsArrayBuffer(f);
+    });
+    return;
+  }
   if(tipo==='idoctors'||tipo==='davinci'){
     Array.from(files).forEach(f=>{
       const r=new FileReader();
@@ -598,6 +622,76 @@ function processFiles(files,tipo,dzId){
       r.readAsArrayBuffer(f);
     });
   }
+}
+
+function parseXLSCorr(buf,fname){
+  try {
+    var wb = XLSX.read(new Uint8Array(buf),{type:'array'});
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+    // Riga 1: "Report compensi COGNOME NOME"
+    var header = String(rows[0]&&rows[0][0]||'');
+    var cognomeRaw = header.replace(/report compensi/i,'').trim().toUpperCase();
+    var cognome = cognomeRaw.split(/\s+/)[0];
+
+    // Riga 2: ambulatorio
+    var ambulatorio = String(rows[1]&&rows[1][1]||'');
+
+    // Riga 3: periodo
+    var periodoFrom = String(rows[2]&&rows[2][1]||'');
+    var periodoTo   = String(rows[2]&&rows[2][2]||'');
+
+    // Riga 5: header colonne (Data, Paziente, Descrizione prestazione)
+    var descHeader = String(rows[4]&&rows[4][2]||'').replace(/\n/g,' ').trim();
+
+    // Righe 6..N: dati prestazioni
+    var righe = [];
+    var subtotale = 0;
+    for(var i=5;i<rows.length;i++){
+      var r = rows[i];
+      var data = String(r[0]||'').trim();
+      var paziente = String(r[1]||'').trim();
+      var importoRaw = r[2];
+      var importo = parseFloat(String(importoRaw).replace(',','.')) || 0;
+
+      if(paziente.toLowerCase().includes('subtotal') || paziente.toLowerCase().includes('totale')) {
+        if(importo > 0) subtotale = importo;
+        // Prova col[3]
+        var alt = parseFloat(String(r[3]||'').replace(',','.')) || 0;
+        if(alt > 0) subtotale = alt;
+        continue;
+      }
+      if(!data || !paziente || importo===0) continue;
+      if(data.toLowerCase()==='data') continue; // skip header
+
+      // Data: prendo solo la parte data senza orario
+      var dataPulita = data.split(' - ')[0].trim();
+
+      righe.push({data:dataPulita, paziente:paziente, desc:descHeader, imp:importo});
+    }
+
+    if(!cognome) return;
+
+    var sede = ambulatorio.toLowerCase().includes('zara') ? 'ZARA' : 'RG';
+
+    if(!S.xls_corr[cognome]) S.xls_corr[cognome] = [];
+    S.xls_corr[cognome].push({
+      sede:sede,
+      ambulatorio:ambulatorio,
+      periodoFrom:periodoFrom,
+      periodoTo:periodoTo,
+      righe:righe,
+      subtotale:subtotale||righe.reduce(function(s,r){return s+r.imp;},0)
+    });
+
+    // Aggiorna info
+    var info = document.getElementById('dz-xls-info');
+    if(info){
+      var tot = Object.keys(S.xls_corr).length;
+      info.textContent = tot + ' medici caricati';
+    }
+  } catch(e){ console.error('parseXLSCorr error:',e,fname); }
 }
 
 function parsePortale(buf,tipo,fname){
@@ -747,7 +841,18 @@ function elabora(){
     const imponibile=lordo-det;
     const ritenuta=imponibile*RIT;
     const netto=imponibile-ritenuta;
-    S.risultati.push({cog,q,d,lordo,det,n_portali:pp.length,imponibile,ritenuta,netto,pp});
+    // Aggiungi dettaglio da XLS corrispettivi se disponibile
+    var xlsData = S.xls_corr[cog];
+    var dettaglio_xls = null;
+    if(xlsData && xlsData.length > 0) {
+      dettaglio_xls = [];
+      xlsData.forEach(function(sede){ dettaglio_xls = dettaglio_xls.concat(sede.righe); });
+    }
+    // Merge con dettaglio demo se presente
+    if(!dettaglio_xls && d.dettaglio) dettaglio_xls = d.dettaglio;
+    if(dettaglio_xls) d.dettaglio = dettaglio_xls;
+
+    S.risultati.push({cog:cog,q:q,d:d,lordo:lordo,det:det,n_portali:pp.length,imponibile:imponibile,ritenuta:ritenuta,netto:netto,pp:pp});
   });
   renderVerifica(meseNome,a);
   renderCorrispettivi(meseNome,a);
@@ -902,13 +1007,18 @@ function renderCorrispettivi(mese,anno){
 }
 
 function stampaSingolo(cog){
-  const el = document.getElementById('cf-'+cog);
-  const win = window.open('','_blank','width=800,height=900');
-  win.document.write('<html><head><title>Corrispettivo '+cog+'</title><style>*{box-sizing:border-box}body{font-family:system-ui,sans-serif;font-size:13px;color:#1c2128;margin:0;padding:20px}.cf-doc{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}.cf-doc-head{background:#185FA5;color:#fff;padding:14px 20px;display:flex;justify-content:space-between}.cf-doc-titolo{font-size:15px;font-weight:700}.cf-doc-meta{text-align:right;font-size:11px;opacity:.85}.cf-info-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e0e0e0}.cf-info-cell{padding:10px 16px;font-size:12px}.cf-info-label{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px;font-weight:600}.cf-info-val{font-weight:500}.cf-portali-note{background:#faeeda;border-left:3px solid #c07a00;padding:6px 12px;font-size:11px;color:#854F0B}.cf-sede-label{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6f1fb;color:#185FA5}table{width:100%;border-collapse:collapse;font-size:12px}th{padding:7px 12px;background:#f6f8fa;text-align:left;border-bottom:1px solid #e0e0e0;font-size:10px;text-transform:uppercase;font-weight:600}td{padding:7px 12px;border-bottom:1px solid #f0f0f0}.cf-totali{padding:12px 16px;background:#f6f8fa;border-top:2px solid #e0e0e0}.cf-tot-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.cf-tot-row.main{border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px}.cf-footer{padding:8px 16px;font-size:10px;color:#888;border-top:1px solid #e0e0e0;line-height:1.6}.blue{color:#185FA5;font-weight:500}.green{color:#2d8a4e;font-weight:700;font-size:16px}.red{color:#c0392b}button{display:none}@media print{button{display:none}}</style></head><body>');
-  win.document.write('<div class="cf-doc">'+el.innerHTML+'</div>');
-  win.document.write('</body></html>');
-  win.document.close();
-  setTimeout(function(){win.print();},600);
+  // Nascondi tutto tranne questo corrispettivo e stampa
+  document.querySelectorAll('.cf-doc').forEach(function(el){
+    el.style.display = el.id === 'cf-'+cog ? '' : 'none';
+  });
+  // Vai alla pagina corrispettivi e stampa
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = p.id==='page-corrispettivi'?'block':'none'; });
+  window.print();
+  // Ripristina
+  setTimeout(function(){
+    document.querySelectorAll('.cf-doc').forEach(function(el){ el.style.display=''; });
+    document.querySelectorAll('.page').forEach(function(p){ p.style.display = p.classList.contains('active')?'block':'none'; });
+  }, 1000);
 }
 
 function copiaSingolo(cog,lordo,det,rit,netto){
