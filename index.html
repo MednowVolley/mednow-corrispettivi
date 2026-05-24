@@ -1007,18 +1007,54 @@ function renderCorrispettivi(mese,anno){
 }
 
 function stampaSingolo(cog){
-  // Nascondi tutto tranne questo corrispettivo e stampa
-  document.querySelectorAll('.cf-doc').forEach(function(el){
-    el.style.display = el.id === 'cf-'+cog ? '' : 'none';
-  });
-  // Vai alla pagina corrispettivi e stampa
-  document.querySelectorAll('.page').forEach(function(p){ p.style.display = p.id==='page-corrispettivi'?'block':'none'; });
-  window.print();
-  // Ripristina
+  var el = document.getElementById('cf-'+cog);
+  if(!el){ showToast('Corrispettivo non trovato'); return; }
+  var css = [
+    '*{box-sizing:border-box;margin:0;padding:0}',
+    'body{font-family:system-ui,sans-serif;font-size:13px;color:#1c2128;padding:20px}',
+    '.cf-doc{border:1px solid #ccc;border-radius:8px;overflow:hidden;margin-bottom:20px}',
+    '.cf-doc-head{background:#185FA5;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start}',
+    '.cf-doc-titolo{font-size:15px;font-weight:700}',
+    '.cf-doc-medico{font-size:12px;opacity:.8;margin-top:2px}',
+    '.cf-doc-meta{text-align:right;font-size:11px;opacity:.85;line-height:1.6}',
+    '.cf-info-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e0e0e0}',
+    '.cf-info-cell{padding:10px 16px;font-size:12px}',
+    '.cf-info-cell:first-child{border-right:1px solid #e0e0e0}',
+    '.cf-info-label{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px;font-weight:600}',
+    '.cf-info-val{font-weight:500}',
+    '.cf-portali-note{background:#faeeda;border-left:3px solid #c07a00;padding:6px 12px;font-size:11px;color:#854F0B}',
+    '.cf-sede-label{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6f1fb;color:#185FA5;margin-right:4px}',
+    'table{width:100%;border-collapse:collapse;font-size:12px}',
+    'th{padding:7px 12px;background:#f6f8fa;text-align:left;border-bottom:1px solid #e0e0e0;font-size:10px;text-transform:uppercase;font-weight:600}',
+    'th:last-child{text-align:right}',
+    'td{padding:7px 12px;border-bottom:1px solid #f0f0f0}',
+    'td:last-child{text-align:right;font-family:monospace}',
+    '.cf-totali{padding:12px 16px;background:#f6f8fa;border-top:2px solid #e0e0e0}',
+    '.cf-tot-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}',
+    '.cf-tot-row.main{border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px}',
+    '.cf-footer{padding:8px 16px;font-size:10px;color:#888;border-top:1px solid #e0e0e0;line-height:1.6}',
+    '.blue{color:#185FA5;font-weight:500}',
+    '.green{color:#2d8a4e;font-weight:700;font-size:16px}',
+    '.red{color:#c0392b}',
+    'button,.btn{display:none!important}',
+    '@media print{button,.btn{display:none!important}}'
+  ].join('\n');
+
+  // Rimuovi i bottoni dall'HTML
+  var content = el.outerHTML.replace(/<div style="display:flex[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*$/, '</div>');
+
+  var iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;height:1px;border:none';
+  document.body.appendChild(iframe);
+  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Corrispettivo '+cog+'</title><style>'+css+'</style></head><body>'+content+'</body></html>');
+  doc.close();
   setTimeout(function(){
-    document.querySelectorAll('.cf-doc').forEach(function(el){ el.style.display=''; });
-    document.querySelectorAll('.page').forEach(function(p){ p.style.display = p.classList.contains('active')?'block':'none'; });
-  }, 1000);
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(function(){ document.body.removeChild(iframe); }, 2000);
+  }, 400);
 }
 
 function copiaSingolo(cog,lordo,det,rit,netto){
