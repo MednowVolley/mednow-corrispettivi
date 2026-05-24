@@ -1236,65 +1236,95 @@ function ginecologaInfo(r){
 }
 
 function renderVerifica(mese,anno){
-  const tot_f=S.risultati.reduce((s,r)=>s+r.d.fatturato,0);
-  const tot_l=S.risultati.reduce((s,r)=>s+r.lordo,0);
-  const tot_d=S.risultati.reduce((s,r)=>s+r.det,0);
-  const tot_n=S.risultati.reduce((s,r)=>s+r.netto,0);
+  var tot_f=S.risultati.reduce(function(s,r){return s+r.d.fatturato;},0);
+  var tot_l=S.risultati.reduce(function(s,r){return s+r.lordo;},0);
+  var tot_d=S.risultati.reduce(function(s,r){return s+r.det;},0);
+  var tot_n=S.risultati.reduce(function(s,r){return s+r.netto;},0);
+  var tot_err=S.risultati.filter(function(r){
+    return r.righeCalcolate && r.righeCalcolate.some(function(p){return p.erroreXLS||p.isPortale&&p.detrazione>0;});
+  }).length;
 
-  var tot_err = S.risultati.filter(function(r){ return r.d.dettaglio && r.d.dettaglio.some(function(p){return p.isPortale&&p.detrazione>0&&Math.abs(p.imp-(p.imp-p.detrazione))>=0.5;}); }).length;
-  document.getElementById('verifica-kpi').innerHTML = ''
-    +'<div class="kpi blue"><div class="kpi-label">Compensi da XLS</div><div class="kpi-val">€'+fmtK(tot_l)+'</div><div class="kpi-sub">'+S.risultati.length+' medici</div></div>'
-    +'<div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€'+fmtK(tot_d)+'</div><div class="kpi-sub">6% + IVA 22%</div></div>'
-    +'<div class="kpi '+(tot_err>0?'red':'green')+'"><div class="kpi-label">'+(tot_err>0?'⚠ Medici con errori':'✓ Tutti corretti')+'</div><div class="kpi-val">'+(tot_err>0?tot_err+' medici':S.risultati.length+' medici')+'</div><div class="kpi-sub">'+(tot_err>0?'detrazioni mancanti':'nessun errore')+'</div></div>'
-    +'<div class="kpi green"><div class="kpi-label">Netto corretto totale</div><div class="kpi-val">€'+fmtK(tot_n)+'</div><div class="kpi-sub">dopo ritenuta 20%</div></div>';
+  document.getElementById('verifica-kpi').innerHTML=''
+    +'<div class="kpi blue"><div class="kpi-label">Fatturato XML</div><div class="kpi-val">€'+fmtK(tot_f)+'</div><div class="kpi-sub">'+S.risultati.length+' medici</div></div>'
+    +'<div class="kpi blue"><div class="kpi-label">Compensi lordi</div><div class="kpi-val">€'+fmtK(tot_l)+'</div></div>'
+    +'<div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€'+fmtK(tot_d)+'</div></div>'
+    +'<div class="kpi '+(tot_err>0?'red':'green')+'"><div class="kpi-label">'+(tot_err>0?'⚠ '+tot_err+' medici con errori':'✓ Tutti corretti')+'</div><div class="kpi-val">€'+fmtK(tot_n)+'</div><div class="kpi-sub">netto totale</div></div>';
 
-  let html='';
-  S.risultati.sort((a,b)=>b.lordo-a.lordo).forEach((r,i)=>{
-    html+=`<div class="mc" id="mc-${i}">
-      <div class="mc-head" onclick="toggleMC(${i})">
-        <div class="mc-left">
-          <div class="mc-avatar">${r.cog.slice(0,2)}</div>
-          <div>
-            <div class="mc-name">${r.cog}</div>
-            <div class="mc-meta">${r.d.prestazioni} prest. · €${fmtK(r.d.fatturato)} fatturato · ${r.d.sedi.join('+')} · ${r.q.note}</div>
-          </div>
-        </div>
-        <div class="mc-right">
-          ${r.n_portali>0?`<span class="badge b-amber">${r.n_portali} portali −€${fmt(r.det)}</span>`:''}
-          <div class="mc-netto">€${fmt(r.netto)}</div>
-          <div class="mc-chevron">▾</div>
-        </div>
-      </div>
-      <div class="mc-body" id="mcb-${i}">
-        <div class="mc-amounts">
-          <div class="ma"><div class="ma-label">Fatturato XML</div><div class="ma-val">€${fmt(r.d.fatturato)}</div></div>
-          <div class="ma"><div class="ma-label">Compenso lordo (${r.q.note})</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
-          <div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">−€${fmt(r.det)}</div></div>
-          <div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">−€${fmt(r.ritenuta)}</div></div>
-          <div class="ma"><div class="ma-label">Netto corretto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
-        </div>
-        ${r.xlsCheck ? (r.xlsCheck.ok
-          ? '<div class="alert a-ok" style="margin-bottom:10px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div>✓ XLS corretto — corrisponde al calcolo XML (diff €'+fmt(r.xlsCheck.diff)+')</div></div>'
-          : '<div class="alert a-warn" style="margin-bottom:10px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>⚠ XLS errato — XLS riporta €'+fmt(r.xlsCheck.xlsLordo)+' ma il calcolo corretto è €'+fmt(r.xlsCheck.calcolatoLordo)+' (diff €'+fmt(r.xlsCheck.diff)+')</div></div>'
-        ) : ''}
-        ${ginecologaInfo(r)}
-        ${r.n_portali>0?`
-        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>Paziente</th><th>Data</th><th>Imp. fattura</th><th>Portale</th><th class="td-r">Compenso medico</th><th class="td-r">Detrazione (7,32%)</th></tr></thead>
-          <tbody>${r.pp.map(p=>{
-            const imp_fatt=p.imponibile||p.importo;
-            const det_riga=imp_fatt*DET;
-            const cp=r.q.pct?imp_fatt*r.q.pct/100:(r.q.fisso||imp_fatt*.70);
-            return`<tr><td>${p.paziente}</td><td>${p.data}</td><td class="td-r">€${fmt(imp_fatt)}</td><td><span class="badge b-blue">${p.portale}</span></td><td class="td-r">€${fmt(cp)}</td><td class="td-r td-red">−€${fmt(det_riga)}</td></tr>`;
-          }).join('')}</tbody>
-        </table></div>`:'<div style="font-size:12px;color:var(--text3)">Nessuna prenotazione da portali.</div>'}
-      </div>
-    </div>`;
+  var html='';
+  S.risultati.sort(function(a,b){return b.lordo-a.lordo;}).forEach(function(r,i){
+    var xlsBadge='';
+    if(r.xlsCheck){
+      xlsBadge = r.xlsCheck.ok
+        ? '<span class="badge b-green">✓ XLS ok</span>'
+        : '<span class="badge b-amber">⚠ XLS diff €'+fmt(r.xlsCheck.diff)+'</span>';
+    }
+    var nErr = r.righeCalcolate ? r.righeCalcolate.filter(function(p){return p.erroreXLS;}).length : 0;
+    html += '<div class="mc" id="mc-'+i+'">'
+      +'<div class="mc-head" onclick="toggleMC('+i+')">'
+      +'<div class="mc-left">'
+      +'<div class="mc-avatar">'+r.cog.slice(0,2)+'</div>'
+      +'<div>'
+      +'<div class="mc-name">'+r.cog+'</div>'
+      +'<div class="mc-meta">'+r.d.prestazioni+' prest. · €'+fmtK(r.d.fatturato)+' fatturato · '+r.d.sedi.join('+')+'</div>'
+      +'</div></div>'
+      +'<div class="mc-right">'
+      +(nErr>0?'<span class="badge b-amber">⚠ '+nErr+' errori</span>':xlsBadge)
+      +'<div class="mc-netto">€'+fmt(r.netto)+'</div>'
+      +'<div class="mc-chevron">▾</div>'
+      +'</div></div>'
+      +'<div class="mc-body" id="mcb-'+i+'">'
+      +'<div class="mc-amounts">'
+      +'<div class="ma"><div class="ma-label">Fatturato XML</div><div class="ma-val">€'+fmt(r.d.fatturato)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Compenso lordo</div><div class="ma-val td-blue">€'+fmt(r.lordo)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">-€'+fmt(r.det)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">-€'+fmt(r.ritenuta)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€'+fmt(r.netto)+'</div></div>'
+      +'</div>'
+      +renderRigheCalcolate(r)
+      +'</div></div>';
   });
-  document.getElementById('verifica-list').innerHTML=html;
+  document.getElementById('verifica-list').innerHTML=html||'<div class="empty">Nessun risultato</div>';
 }
 
+function renderRigheCalcolate(r){
+  if(!r.righeCalcolate || r.righeCalcolate.length===0) return '';
+  var nErr=0;
+  var righe=r.righeCalcolate.map(function(p){
+    var rigaClass='riga-ok', badge='', compStr='';
+    var impShow=p.imp_fattura||0;
+    var compXLS=p.xlsComp||p.imp||0;
+    var compCalc=p.compensoCorretto!==undefined?p.compensoCorretto:(p.compBase||compXLS);
+    if(p.erroreXLS && p.xmlTrovato){
+      nErr++;
+      rigaClass='riga-err';
+      badge='<span class="badge-err-riga">⚠ diff €'+fmt(p.diffXLS)+'</span>';
+      compStr='<span style="text-decoration:line-through;color:var(--red)">€'+fmt(compXLS)+'</span> → <strong style="color:var(--green)">€'+fmt(compCalc)+'</strong>';
+    } else if(p.isPortale && p.detrazione>0){
+      nErr++;
+      rigaClass='riga-err';
+      badge='<span class="badge-err-riga">⚠ portale -€'+fmt(p.detrazione)+'</span>';
+      compStr='<span style="text-decoration:line-through;color:var(--red)">€'+fmt(compXLS)+'</span> → <strong style="color:var(--green)">€'+fmt(compCalc)+'</strong>';
+    } else if(p.isPortale){
+      rigaClass='riga-fix';
+      badge='<span class="badge-ok-riga">✓ portale</span>';
+      compStr='€'+fmt(compCalc);
+    } else if(!p.xmlTrovato && impShow===0){
+      badge='<span class="badge-err-riga">⚠ no XML</span>';
+      compStr='€'+fmt(compXLS)+' (XLS)';
+    } else {
+      compStr='€'+fmt(compCalc);
+    }
+    var impCell=impShow>0?'€'+fmt(impShow):'<span style="color:var(--text3)">-</span>';
+    return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+(p.desc||'')+'</td><td style="text-align:right">'+impCell+'</td><td style="text-align:right">€'+fmt(compXLS)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
+  }).join('');
+  var nOk=r.righeCalcolate.length-nErr;
+  var summary='<div class="verifica-summary">'
+    +(nErr>0?'<span class="vs-card vs-warn">⚠ '+nErr+' righe con errore</span>':'<span class="vs-card vs-ok">✓ Tutti corretti</span>')
+    +'<span class="vs-card vs-ok">'+nOk+' righe OK</span>'
+    +(r.xlsCheck&&!r.xlsCheck.ok?'<span class="vs-card vs-err">Totale XLS €'+fmt(r.xlsCheck.xlsLordo)+' vs calcolato €'+fmt(r.xlsCheck.calcolatoLordo)+'</span>':'')
+    +'</div>';
+  return summary+'<div class="tbl-wrap"><table class="cf-prest-table"><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp. fattura</th><th>Comp. XLS</th><th>Comp. corretto</th></tr></thead><tbody>'+righe+'</tbody></table></div>';
+}
 function toggleMC(i){
   const mc=document.getElementById('mc-'+i);
   mc.classList.toggle('open');
