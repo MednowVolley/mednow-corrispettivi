@@ -4,549 +4,271 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mednow — Corrispettivi Medici</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#185FA5;--blue2:#1e6aff;--blue-dim:rgba(24,95,165,0.12);
-  --green:#2d8a4e;--green-dim:rgba(45,138,78,0.12);
-  --red:#c0392b;--red-dim:rgba(192,57,43,0.1);
+  --blue:#185FA5;--blue2:#1e6aff;--blue-dim:rgba(24,95,165,0.1);
+  --green:#2d8a4e;--green-dim:rgba(45,138,78,0.1);
+  --red:#c0392b;--red-dim:rgba(192,57,43,0.08);
   --amber:#c07a00;--amber-dim:rgba(192,122,0,0.1);
-  --sidebar:#0d1117;--sidebar2:#161b22;--sidebar3:#21262d;
-  --surface:#ffffff;--surface2:#f6f8fa;--surface3:#eaeef2;
+  --sidebar:#0d1117;--surface:#fff;--surface2:#f6f8fa;
   --text:#1c2128;--text2:#57606a;--text3:#8c959f;
-  --border:#d0d7de;--border2:#e6eaed;
+  --border:#d0d7de;--border2:#e8ecf0;
   --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
-  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
-  --shadow-md:0 4px 16px rgba(0,0,0,.1),0 1px 4px rgba(0,0,0,.06);
+  --r:10px;
 }
+html,body{height:100%;font-family:var(--font);background:var(--surface2);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh;overflow:hidden}
 
-html,body{height:100%;font-family:var(--font);background:var(--surface2);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* SIDEBAR */
+.sb{width:220px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo img{height:32px;width:auto;display:block;margin-bottom:4px}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em}
+.sb-nav{padding:10px 8px;flex:1}
+.sb-sec{font-size:10px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em;padding:10px 8px 4px}
+.nb{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.45);font-size:13px;border:none;background:none;width:100%;text-align:left;transition:all .15s}
+.nb:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
+.nb.on{background:rgba(24,95,165,.3);color:#5b9cf6}
+.nb svg{width:15px;height:15px;flex-shrink:0}
+.sb-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:rgba(255,255,255,.3)}
+.sb-footer strong{color:rgba(255,255,255,.6);display:block}
 
-/* ── LAYOUT ── */
-.shell{display:flex;height:100vh;overflow:hidden}
-
-/* ── SIDEBAR ── */
-.sidebar{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
-.sidebar-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.logo-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:4px}
-.logo-dot{width:8px;height:8px;background:var(--blue2);border-radius:50%;box-shadow:0 0 8px var(--blue2)}
-.logo-name{font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.3px}
-.logo-sub{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:0.04em;text-transform:uppercase;margin-left:16px}
-
-.sidebar-nav{padding:12px 10px;flex:1;overflow-y:auto}
-.nav-group{margin-bottom:20px}
-.nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:0.08em;padding:0 10px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;transition:all 0.15s;border:none;background:none;width:100%;text-align:left}
-.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
-.nav-item.active{background:rgba(24,95,165,.25);color:#5b9cf6;border:1px solid rgba(91,156,246,.2)}
-.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
-.nav-item.active svg{opacity:1}
-
-.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.06)}
-.sidebar-month{font-size:12px;color:rgba(255,255,255,.4)}
-.sidebar-month strong{color:rgba(255,255,255,.7);display:block;font-size:13px;margin-top:2px}
-
-/* ── MAIN ── */
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
-.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
-.topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
-.topbar-actions{display:flex;align-items:center;gap:8px}
+.topbar{height:50px;background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;gap:10px}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.content{flex:1;overflow-y:auto;padding:20px}
+.page{display:none}.page.on{display:block}
 
-.content{flex:1;overflow-y:auto;padding:24px}
-.page{display:none;animation:fadeUp .2s ease}
-.page.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px;color:var(--text)}
 
-/* ── CARDS ── */
-.card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
-.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.card-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
-.card-title svg{width:14px;height:14px;color:var(--text3)}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;border-top:3px solid var(--blue)}
+.kpi.g{border-top-color:var(--green)}.kpi.a{border-top-color:var(--amber)}.kpi.r{border-top-color:var(--red)}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi-val{font-size:20px;font-weight:700;font-family:var(--mono)}
 
-/* ── KPI ── */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.kpi.blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
-.kpi.green::before{background:linear-gradient(90deg,#2d8a4e,#3eb868)}
-.kpi.red::before{background:linear-gradient(90deg,#c0392b,#e74c3c)}
-.kpi.amber::before{background:linear-gradient(90deg,#c07a00,#e6a817)}
-.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
-.kpi-val{font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-0.5px}
-.kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
-
-/* ── UPLOAD ── */
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.dz{border:1.5px dashed var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2)}
-.dz:hover{border-color:var(--blue);background:var(--blue-dim)}
-.dz.drag{border-color:var(--blue);background:var(--blue-dim)}
-.dz.loaded{border-color:var(--green);border-style:solid;background:var(--green-dim)}
-.dz-icon{width:32px;height:32px;margin:0 auto 10px;color:var(--text3)}
-.dz.loaded .dz-icon{color:var(--green)}
-.dz-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
-.dz.loaded .dz-title{color:var(--green)}
+/* UPLOAD */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dz{border:1.5px dashed var(--border);border-radius:var(--r);padding:18px 14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2)}
+.dz:hover,.dz.drag{border-color:var(--blue);background:var(--blue-dim)}
+.dz.ok{border-color:var(--green);border-style:solid;background:var(--green-dim)}
+.dz-icon{width:28px;height:28px;margin:0 auto 8px;color:var(--text3)}
+.dz.ok .dz-icon{color:var(--green)}
+.dz-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.dz.ok .dz-title{color:var(--green)}
 .dz-sub{font-size:11px;color:var(--text3)}
-.dz-info{font-size:11px;color:var(--text3);margin-top:6px}
-.dz.loaded .dz-info{color:var(--green)}
+.dz-info{font-size:11px;color:var(--text3);margin-top:5px}
+.dz.ok .dz-info{color:var(--green)}
+.dz-full{grid-column:1/-1}
 
-/* ── BADGE ── */
-.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.01em}
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);transition:all .12s}
+.btn:hover{background:var(--surface2)}
+.btn-p{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-p:hover{background:var(--blue2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* SELECT */
+select{padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font)}
+input[type=file]{display:none}
+
+/* MEDICO CARD */
+.mc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.mc-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer}
+.mc-head:hover{background:var(--surface2)}
+.mc-av{width:34px;height:34px;border-radius:8px;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--blue);flex-shrink:0;font-family:var(--mono)}
+.mc-info{margin-left:10px}
+.mc-name{font-size:14px;font-weight:600}
+.mc-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.mc-right{display:flex;align-items:center;gap:8px}
+.mc-netto{font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)}
+.mc-body{display:none;padding:14px 16px;border-top:1px solid var(--border2);background:var(--surface2)}
+.mc.open .mc-body{display:block}
+.mc-amounts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.ma{background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:8px 10px}
+.ma-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.ma-val{font-size:14px;font-weight:700;font-family:var(--mono)}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.b-ok{background:var(--green-dim);color:var(--green)}
+.b-warn{background:var(--amber-dim);color:var(--amber)}
+.b-err{background:var(--red-dim);color:var(--red)}
 .b-blue{background:var(--blue-dim);color:var(--blue)}
-.b-green{background:var(--green-dim);color:var(--green)}
-.b-red{background:var(--red-dim);color:var(--red)}
-.b-amber{background:var(--amber-dim);color:var(--amber)}
-.b-gray{background:var(--surface3);color:var(--text3)}
 
-/* ── ALERT ── */
-.alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;border-left:3px solid}
-.alert svg{width:15px;height:15px;flex-shrink:0;margin-top:1px}
-.a-info{background:var(--blue-dim);color:var(--blue);border-color:var(--blue)}
+/* ALERT */
+.alert{display:flex;gap:8px;padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:10px;border-left:3px solid}
 .a-ok{background:var(--green-dim);color:var(--green);border-color:var(--green)}
 .a-warn{background:var(--amber-dim);color:var(--amber);border-color:var(--amber)}
 .a-err{background:var(--red-dim);color:var(--red);border-color:var(--red)}
+.a-info{background:var(--blue-dim);color:var(--blue);border-color:var(--blue)}
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all .13s;font-family:var(--font)}
-.btn:hover{background:var(--surface2);border-color:var(--border)}
-.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.btn-primary:hover{background:var(--blue2);border-color:var(--blue2)}
-.btn-sm{padding:5px 10px;font-size:12px}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border2)}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-thead{background:var(--surface2)}
-th{padding:9px 12px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap}
-td{padding:9px 12px;border-bottom:1px solid var(--border2);color:var(--text);vertical-align:middle}
+/* TABLE */
+.tbl-wrap{border:1px solid var(--border2);border-radius:8px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:8px 12px;background:var(--surface2);color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid var(--border2);color:var(--text)}
 tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:var(--surface2)}
-.td-r{text-align:right;font-family:var(--mono);font-size:12px}
-.td-green{color:var(--green);font-weight:600}
-.td-red{color:var(--red);font-weight:600}
-.td-blue{color:var(--blue);font-weight:600}
-.td-amber{color:var(--amber);font-weight:600}
+tr:hover td{background:var(--surface2)}
+.tr-err td{background:#fff8e6}
+.tr-err td:first-child{border-left:3px solid var(--amber)}
+.tr-ok td{background:#f0faf4}
+.tr-r{text-align:right;font-family:var(--mono);font-size:11px}
 
-/* ── MEDICO CARD ── */
-.mc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);transition:box-shadow .15s}
-.mc:hover{box-shadow:var(--shadow-md)}
-.mc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer}
-.mc-left{display:flex;align-items:center;gap:12px}
-.mc-avatar{width:36px;height:36px;border-radius:9px;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue);flex-shrink:0;font-family:var(--mono)}
-.mc-name{font-size:14px;font-weight:600;color:var(--text)}
-.mc-meta{font-size:11px;color:var(--text3);margin-top:2px}
-.mc-right{display:flex;align-items:center;gap:10px}
-.mc-netto{font-size:17px;font-weight:700;color:var(--green);font-family:var(--mono)}
-.mc-chevron{color:var(--text3);font-size:16px;transition:transform .2s}
-.mc.open .mc-chevron{transform:rotate(180deg)}
-.mc-body{display:none;padding:16px 18px;border-top:1px solid var(--border2);background:var(--surface2)}
-.mc.open .mc-body{display:block}
+/* CORRISPETTIVO DOC */
+.doc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.doc-head{background:var(--blue);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start}
+.doc-title{font-size:15px;font-weight:700}
+.doc-sub{font-size:11px;opacity:.75;margin-top:2px}
+.doc-meta{text-align:right;font-size:11px;opacity:.8;line-height:1.6}
+.doc-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border2)}
+.doc-cell{padding:10px 16px;font-size:12px}
+.doc-cell:first-child{border-right:1px solid var(--border2)}
+.doc-lbl{font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.doc-totali{padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border2)}
+.tot-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.tot-row.main{border-top:1.5px solid var(--border);margin-top:6px;padding-top:8px}
+.tot-val{font-family:var(--mono);font-weight:500}
+.doc-footer{padding:8px 16px;font-size:10px;color:var(--text3);border-top:1px solid var(--border2)}
+.doc-actions{padding:8px 14px;border-top:1px solid var(--border2);display:flex;gap:6px;background:var(--surface2)}
 
-.mc-amounts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
-.ma{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 12px}
-.ma-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px}
-.ma-val{font-size:14px;font-weight:700;font-family:var(--mono)}
-
-/* ── CORRISPETTIVO CARD ── */
-.cc{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
-.cc-head{padding:16px 20px 14px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:flex-start}
-.cc-name{font-size:15px;font-weight:700;color:var(--text)}
-.cc-period{font-size:11px;color:var(--text3);margin-top:2px}
-.cc-body{padding:16px 20px}
-.cc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
-.cc-row + .cc-row{border-top:1px solid var(--border2)}
-.cc-label{color:var(--text2)}
-.cc-val{font-family:var(--mono);font-size:13px;font-weight:500}
-.cc-total{border-top:2px solid var(--border);margin-top:4px;padding-top:10px;margin-bottom:0}
-.cc-total .cc-label{font-weight:700;font-size:14px;color:var(--text)}
-.cc-total .cc-val{font-size:18px;font-weight:800;color:var(--green);font-family:var(--mono)}
-
-/* ── SELECT ── */
-select,input[type=text]{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;transition:border .13s}
-select:focus,input:focus{border-color:var(--blue)}
-input[type=file]{display:none}
-
-/* ── STEPS ── */
-.steps{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border2);border-radius:9px;overflow:hidden;background:var(--surface)}
-.step{flex:1;padding:10px 14px;font-size:12px;font-weight:500;color:var(--text3);text-align:center;transition:all .15s;cursor:default;border-right:1px solid var(--border2)}
-.step:last-child{border-right:none}
-.step.active{background:var(--blue);color:#fff}
-.step.done{background:var(--green-dim);color:var(--green)}
-
-
-/* ── QUOTE EDITOR ── */
-.qe-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.qe-search{flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
-.qe-search:focus{border-color:var(--blue)}
-.qe-filter{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;cursor:pointer}
-.qe-count{font-size:12px;color:var(--text3);margin-left:auto}
-.qe-table-wrap{border:1px solid var(--border2);border-radius:9px;overflow:hidden}
-.qe-table{width:100%;border-collapse:collapse;font-size:13px}
-.qe-table th{padding:9px 12px;background:var(--surface2);color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--border2)}
-.qe-table td{padding:7px 10px;border-bottom:1px solid var(--border2);vertical-align:middle}
-.qe-table tr:last-child td{border-bottom:none}
-.qe-table tr:hover td{background:var(--surface2)}
-.qe-cognome{font-weight:600;font-size:13px;color:var(--text)}
-.qe-tipo{display:inline-flex;align-items:center;gap:4px}
-.qe-tipo select{padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface);color:var(--text);cursor:pointer;font-family:var(--font)}
-.qe-input{width:70px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right;font-family:var(--mono);background:var(--surface);color:var(--text)}
-.qe-input:focus{border-color:var(--blue);outline:none}
-.qe-note{width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface);color:var(--text);font-family:var(--font)}
-.qe-note:focus{border-color:var(--blue);outline:none}
-.qe-save-btn{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--green);background:var(--green-dim);color:var(--green);font-family:var(--font);transition:all .12s}
-.qe-save-btn:hover{background:var(--green);color:#fff}
-.qe-del-btn{padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-family:var(--font);transition:all .12s}
-.qe-del-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
-.qe-add-card{background:var(--surface);border:1.5px dashed var(--border);border-radius:9px;padding:14px 16px;margin-top:12px}
-.qe-add-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
-.qe-add-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}
-.qe-add-grid label{display:block;font-size:11px;color:var(--text3);margin-bottom:3px}
-.qe-add-grid input,.qe-add-grid select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font)}
-.qe-modified{background:rgba(24,95,165,.05)!important}
-.qe-modified td{border-left:2px solid var(--blue)!important}
-.toast{position:fixed;bottom:20px;right:20px;background:#1c2128;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;display:flex;align-items:center;gap:8px}
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#1c2128;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
 
-/* ── STAMPA ── */
-@media print {
-  .sidebar,.topbar,.topbar-actions,.cf-export-bar,.btn,.nav-item { display:none!important; }
-  .main { overflow:visible!important; }
-  .content { padding:0!important; }
-  .cf-doc { break-inside:avoid; margin-bottom:20px; box-shadow:none!important; border:1px solid #ccc!important; }
-  .page { display:block!important; }
-  #page-corrispettivi { display:block!important; }
+/* PRINT */
+@media print{
+  .sb,.topbar,.doc-actions,.btn-row,select{display:none!important}
+  .main,.content,.page{overflow:visible!important}
+  .doc{break-inside:avoid;margin-bottom:20px;box-shadow:none}
 }
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-
-
-/* ── CORRISPETTIVO FORMALE ── */
-.cf-wrap{max-width:700px;margin:0 auto}
-.cf-doc{background:#fff;border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
-.cf-doc-head{background:var(--blue);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start}
-.cf-doc-titolo{font-size:15px;font-weight:700;letter-spacing:-.2px}
-.cf-doc-medico{font-size:12px;opacity:.8;margin-top:2px}
-.cf-doc-meta{text-align:right;font-size:11px;opacity:.85;line-height:1.6}
-.cf-doc-body{padding:0}
-.cf-info-bar{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--border2)}
-.cf-info-cell{padding:10px 16px;font-size:12px;color:var(--text2)}
-.cf-info-cell:first-child{border-right:1px solid var(--border2)}
-.cf-info-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:2px;font-weight:600}
-.cf-info-val{font-weight:500;color:var(--text)}
-.cf-prest-table{width:100%;border-collapse:collapse;font-size:12px}
-.cf-prest-table th{padding:7px 16px;background:var(--surface2);color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--border2)}
-.cf-prest-table th:last-child{text-align:right}
-.cf-prest-table td{padding:7px 16px;border-bottom:1px solid var(--border2);color:var(--text)}
-.cf-prest-table td:last-child{text-align:right;font-family:var(--mono);font-size:11px}
-.cf-prest-table tr:last-child td{border-bottom:none}
-.cf-totali{border-top:1.5px solid var(--border);padding:12px 16px;background:var(--surface2)}
-.cf-tot-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
-.cf-tot-row.main{border-top:1.5px solid var(--border);margin-top:6px;padding-top:10px}
-.cf-tot-label{color:var(--text2)}
-.cf-tot-val{font-family:var(--mono);font-weight:500}
-.cf-tot-val.green{color:var(--green);font-weight:700;font-size:16px}
-.cf-tot-val.red{color:var(--red)}
-.cf-tot-val.blue{color:var(--blue)}
-.cf-footer{padding:10px 16px;font-size:10px;color:var(--text3);border-top:1px solid var(--border2);line-height:1.6}
-.cf-portali-note{background:var(--amber-dim);border-left:3px solid var(--amber);padding:6px 12px;font-size:11px;color:var(--amber);margin:0 0 0 0}
-.cf-export-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.cf-sede-label{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--blue-dim);color:var(--blue);margin-bottom:8px}
-
-
-/* ── VERIFICA RIGHE ── */
-.riga-ok td { background: transparent; }
-.riga-err td { background: #fff8e6 !important; }
-.riga-err td:first-child { border-left: 3px solid var(--amber); }
-.riga-fix td { background: #eaf3de !important; }
-.riga-fix td:first-child { border-left: 3px solid var(--green); }
-.badge-err-riga { display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;background:var(--amber-dim);color:var(--amber);margin-left:6px }
-.badge-ok-riga { display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;background:var(--green-dim);color:var(--green);margin-left:6px }
-.verifica-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px }
-.vs-card { padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500 }
-.vs-ok { background:var(--green-dim);color:var(--green) }
-.vs-warn { background:var(--amber-dim);color:var(--amber) }
-.vs-err { background:var(--red-dim);color:var(--red) }
-
-/* ── EMPTY ── */
-.empty{text-align:center;padding:48px 24px;color:var(--text3)}
-.empty svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
-.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px}
-.empty-sub{font-size:13px}
-
-/* ── PERIODO PILL ── */
-.periodo-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;box-shadow:var(--shadow)}
-.periodo-label{font-size:12px;color:var(--text3);font-weight:500}
-
-/* ── INCONGRUENZA ── */
-.inc-item{display:flex;gap:12px;padding:12px 16px;border-radius:9px;margin-bottom:8px;align-items:flex-start}
-.inc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.inc-icon svg{width:16px;height:16px}
-.inc-err .inc-icon{background:var(--red-dim);color:var(--red)}
-.inc-warn .inc-icon{background:var(--amber-dim);color:var(--amber)}
-.inc-ok .inc-icon{background:var(--green-dim);color:var(--green)}
-.inc-body{flex:1}
-.inc-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
-.inc-msg{font-size:12px;color:var(--text2)}
-.inc-item{background:var(--surface);border:1px solid var(--border2);box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
-<div class="shell">
-
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <img src="data:image/png;base64,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" alt="Mednow" style="height:36px;width:auto;margin-bottom:6px;display:block">
-    <div class="logo-sub">Corrispettivi Medici</div>
+<div class="app">
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="sb-sub">Corrispettivi Medici</div>
   </div>
-  <nav class="sidebar-nav">
-    <div class="nav-group">
-      <div class="nav-label">Flusso mensile</div>
-      <button class="nav-item active" onclick="nav(this,'carica')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Carica file
-      </button>
-      <button class="nav-item" onclick="nav(this,'verifica')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        Verifica & Match
-      </button>
-      <button class="nav-item" onclick="nav(this,'corrispettivi')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        Corrispettivi
-      </button>
-      <button class="nav-item" onclick="nav(this,'incongruenze')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Incongruenze
-      </button>
-    </div>
-    <div class="nav-group">
-      <div class="nav-label">Configurazione</div>
-      <button class="nav-item" onclick="nav(this,'quote')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Quote medici
-      </button>
-    </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Processo</div>
+    <button class="nb on" onclick="goTo(this,'carica')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Carica file
+    </button>
+    <button class="nb" onclick="goTo(this,'verifica')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Verifica
+    </button>
+    <button class="nb" onclick="goTo(this,'corrispettivi')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Corrispettivi
+    </button>
+    <div class="sb-sec">Config</div>
+    <button class="nb" onclick="goTo(this,'quote')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Quote medici
+    </button>
   </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-month">Periodo attivo<strong id="sb-periodo">—</strong></div>
-  </div>
+  <div class="sb-footer">Periodo<strong id="sb-per">—</strong></div>
 </aside>
 
-<!-- MAIN -->
 <div class="main">
   <div class="topbar">
-    <div>
-      <div class="topbar-title" id="tb-title">Carica file mensili</div>
-      <div class="topbar-sub" id="tb-sub">Fatture XML + report portali → corrispettivi automatici</div>
-    </div>
-    <div class="topbar-actions">
-      <select id="sel-mese" onchange="updatePeriodo()">
-        <option value="01">Gennaio</option><option value="02">Febbraio</option>
-        <option value="03">Marzo</option><option value="04">Aprile</option>
-        <option value="05" selected>Maggio</option><option value="06">Giugno</option>
-        <option value="07">Luglio</option><option value="08">Agosto</option>
-        <option value="09">Settembre</option><option value="10">Ottobre</option>
+    <div class="topbar-title" id="tb-title">Carica file mensili</div>
+    <div class="topbar-right">
+      <select id="sel-mese">
+        <option value="1">Gennaio</option><option value="2">Febbraio</option>
+        <option value="3">Marzo</option><option value="4">Aprile</option>
+        <option value="5" selected>Maggio</option><option value="6">Giugno</option>
+        <option value="7">Luglio</option><option value="8">Agosto</option>
+        <option value="9">Settembre</option><option value="10">Ottobre</option>
         <option value="11">Novembre</option><option value="12">Dicembre</option>
       </select>
-      <select id="sel-anno" onchange="updatePeriodo()">
-        <option value="2026" selected>2026</option>
-        <option value="2027">2027</option>
-      </select>
+      <select id="sel-anno"><option value="2026" selected>2026</option><option value="2027">2027</option></select>
     </div>
   </div>
 
   <div class="content">
 
     <!-- CARICA -->
-    <div id="page-carica" class="page active">
-      <div class="steps">
-        <div class="step active">1 — Carica fatture XML</div>
-        <div class="step">2 — Carica portali esterni</div>
-        <div class="step">3 — Elabora</div>
-      </div>
-
-      <div class="alert a-info">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div>Carica il ZIP delle fatture XML (RG e/o Zara) + i report XLSX dei portali. I corrispettivi vengono calcolati automaticamente con le detrazioni portali già applicate.</div>
-      </div>
-
+    <div id="page-carica" class="page on">
+      <div class="alert a-info"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Carica i file del mese: ZIP fatture XML + XLS corrispettivi + export gestionale + report portali. Poi premi <strong>Elabora</strong>.</div></div>
       <div class="upload-grid">
-        <div class="dz" id="dz-rg" onclick="document.getElementById('fi-rg').click()" ondragover="dzOn(event,'dz-rg')" ondragleave="dzOff('dz-rg')" ondrop="dzDrop(event,'dz-rg','rg')">
+        <div class="dz" id="dz-rg" onclick="fi('fi-rg')" ondragover="dzon(event,'dz-rg')" ondragleave="dzoff('dz-rg')" ondrop="dzdrop(event,'dz-rg','rg')">
           <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <div class="dz-title">Fatture XML — Regina Giovanna</div>
           <div class="dz-sub">ZIP con file .xml</div>
-          <div class="dz-info" id="dz-rg-info"></div>
+          <div class="dz-info" id="i-rg"></div>
         </div>
-        <div class="dz" id="dz-zara" onclick="document.getElementById('fi-zara').click()" ondragover="dzOn(event,'dz-zara')" ondragleave="dzOff('dz-zara')" ondrop="dzDrop(event,'dz-zara','zara')">
+        <div class="dz" id="dz-zara" onclick="fi('fi-zara')" ondragover="dzon(event,'dz-zara')" ondragleave="dzoff('dz-zara')" ondrop="dzdrop(event,'dz-zara','zara')">
           <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <div class="dz-title">Fatture XML — Zara</div>
           <div class="dz-sub">ZIP con file .xml</div>
-          <div class="dz-info" id="dz-zara-info"></div>
+          <div class="dz-info" id="i-zara"></div>
         </div>
-        <div class="dz" id="dz-idoc" onclick="document.getElementById('fi-idoc').click()" ondragover="dzOn(event,'dz-idoc')" ondragleave="dzOff('dz-idoc')" ondrop="dzDrop(event,'dz-idoc','idoctors')">
-          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <div class="dz-title">iDoctors</div>
-          <div class="dz-sub">Report prenotazioni XLSX</div>
-          <div class="dz-info" id="dz-idoc-info"></div>
+        <div class="dz" id="dz-xls" onclick="fi('fi-xls')" ondragover="dzon(event,'dz-xls')" ondragleave="dzoff('dz-xls')" ondrop="dzdrop(event,'dz-xls','xls')" style="grid-column:1/-1;border-color:var(--blue);background:var(--blue-dim)">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="dz-title" style="color:var(--blue)">XLS Corrispettivi medici</div>
+          <div class="dz-sub">Tutti i file XLS del mese — anche multipli</div>
+          <div class="dz-info" id="i-xls"></div>
         </div>
-        <div class="dz" id="dz-dav" onclick="document.getElementById('fi-dav').click()" ondragover="dzOn(event,'dz-dav')" ondragleave="dzOff('dz-dav')" ondrop="dzDrop(event,'dz-dav','davinci')">
-          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <div class="dz-title">Davinci / Doctolib / CupSolidale</div>
-          <div class="dz-sub">Report portali XLSX — anche multipli</div>
-          <div class="dz-info" id="dz-dav-info"></div>
-        </div>
-        <div class="dz" id="dz-xls" onclick="document.getElementById('fi-xls').click()" ondragover="dzOn(event,'dz-xls')" ondragleave="dzOff('dz-xls')" ondrop="dzDrop(event,'dz-xls','xls_corr')" style="grid-column:1/-1;border-style:solid;border-color:var(--blue);background:var(--blue-dim)">
-          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <div class="dz-title" style="color:var(--blue)">File XLS Corrispettivi medici</div>
-          <div class="dz-sub">Carica tutti gli XLS del mese — genera il corrispettivo formale completo con ogni paziente</div>
-          <div class="dz-info" id="dz-xls-info"></div>
-        </div>
-        <div class="dz" id="dz-gest" onclick="document.getElementById('fi-gest').click()" ondragover="dzOn(event,'dz-gest')" ondragleave="dzOff('dz-gest')" ondrop="dzDrop(event,'dz-gest','gestionale')" style="grid-column:1/-1">
+        <div class="dz" id="dz-gest" onclick="fi('fi-gest')" ondragover="dzon(event,'dz-gest')" ondragleave="dzoff('dz-gest')" ondrop="dzdrop(event,'dz-gest','gest')">
           <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <div class="dz-title">Export Gestionale (facoltativo ma consigliato)</div>
-          <div class="dz-sub">Export agenda da gestionaleambulatorio.it — permette il match paziente+medico definitivo</div>
-          <div class="dz-info" id="dz-gest-info"></div>
+          <div class="dz-title">Export Gestionale</div>
+          <div class="dz-sub">esportazione_YYYY-MM-DD.xlsx (opzionale)</div>
+          <div class="dz-info" id="i-gest"></div>
+        </div>
+        <div class="dz" id="dz-port" onclick="fi('fi-port')" ondragover="dzon(event,'dz-port')" ondragleave="dzoff('dz-port')" ondrop="dzdrop(event,'dz-port','portale')">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="dz-title">iDoctors / Davinci / Doctolib</div>
+          <div class="dz-sub">Report portali XLSX</div>
+          <div class="dz-info" id="i-port"></div>
         </div>
       </div>
-
-      <input type="file" id="fi-rg" accept=".zip" onchange="handleF(this,'rg','dz-rg')">
-      <input type="file" id="fi-xls" accept=".xls,.xlsx" multiple onchange="handleF(this,'xls_corr','dz-xls')">
-      <input type="file" id="fi-gest" accept=".xlsx,.xls,.csv" onchange="handleF(this,'gestionale','dz-gest')">
-      <input type="file" id="fi-zara" accept=".zip" onchange="handleF(this,'zara','dz-zara')">
-      <input type="file" id="fi-idoc" accept=".xlsx,.xls" multiple onchange="handleF(this,'idoctors','dz-idoc')">
-      <input type="file" id="fi-dav" accept=".xlsx,.xls" multiple onchange="handleF(this,'davinci','dz-dav')">
-
+      <input type="file" id="fi-rg" accept=".zip" onchange="load(this,'rg','dz-rg','i-rg')">
+      <input type="file" id="fi-zara" accept=".zip" onchange="load(this,'zara','dz-zara','i-zara')">
+      <input type="file" id="fi-xls" accept=".xls,.xlsx" multiple onchange="load(this,'xls','dz-xls','i-xls')">
+      <input type="file" id="fi-gest" accept=".xlsx,.xls" onchange="load(this,'gest','dz-gest','i-gest')">
+      <input type="file" id="fi-port" accept=".xlsx,.xls" multiple onchange="load(this,'portale','dz-port','i-port')">
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="elabora()">
+        <button class="btn btn-p" onclick="elabora()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Elabora e verifica
         </button>
-        <button class="btn" onclick="demo()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Carica dati demo
-        </button>
+        <button class="btn" onclick="loadDemo()">Demo</button>
       </div>
     </div>
 
     <!-- VERIFICA -->
     <div id="page-verifica" class="page">
-      <div id="verifica-kpi" class="kpi-row"></div>
-      <div id="verifica-list"></div>
+      <div id="kpi-area" class="kpi-grid"></div>
+      <div id="medici-list"></div>
     </div>
 
     <!-- CORRISPETTIVI -->
     <div id="page-corrispettivi" class="page">
-      <div class="cf-export-bar" id="corr-export-bar" style="display:none">
-        <button class="btn btn-primary" onclick="stampaTutti()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Stampa tutti
-        </button>
-        <button class="btn" onclick="copiaTutti()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copia tutti (testo)
-        </button>
+      <div class="btn-row" style="margin-bottom:14px">
+        <button class="btn btn-p" onclick="window.print()">Stampa tutti</button>
       </div>
-      <div class="cf-wrap" id="corr-list"></div>
-    </div>
-
-    <!-- INCONGRUENZE -->
-    <div id="page-incongruenze" class="page">
-      <div id="inc-list"></div>
+      <div id="doc-list"></div>
     </div>
 
     <!-- QUOTE -->
     <div id="page-quote" class="page">
-      <div class="card" style="margin-bottom:12px">
-        <div class="card-head">
-          <div class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Portali esterni — regola detrazione
-          </div>
-        </div>
-        <div class="alert a-warn" style="margin-bottom:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div><strong>iDoctors, Davinci, Doctolib, CupSolidale:</strong> 6% + IVA 22% = <strong>7,32%</strong> sull'imponibile fattura (escluso bollo) → sottratto dal compenso lordo del medico</div>
-        </div>
-      </div>
-
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Quote medici
-            <span id="qe-mod-badge" style="display:none" class="badge b-blue">modifiche non salvate</span>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-sm" onclick="qeSalvaTutti()" title="Salva tutte le modifiche">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
-              Salva tutto
-            </button>
-            <button class="btn btn-sm" onclick="qeReset()" title="Ripristina valori di default">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.33"/></svg>
-              Reset default
-            </button>
-          </div>
-        </div>
-
-        <div class="qe-toolbar">
-          <input type="text" class="qe-search" id="qe-search" placeholder="🔍  Cerca medico..." oninput="qeFilter()">
-          <select class="qe-filter" id="qe-tipo-filter" onchange="qeFilter()">
-            <option value="">Tutti i tipi</option>
-            <option value="pct">Percentuale</option>
-            <option value="fisso">Importo fisso</option>
-          </select>
-          <span class="qe-count" id="qe-count"></span>
-        </div>
-
-        <div class="qe-table-wrap">
-          <table class="qe-table">
-            <thead>
-              <tr>
-                <th style="width:130px">Cognome</th>
-                <th style="width:110px">Tipo quota</th>
-                <th style="width:90px">Valore</th>
-                <th>Note / accordo</th>
-                <th style="width:100px">Azioni</th>
-              </tr>
-            </thead>
-            <tbody id="qe-tbody"></tbody>
+        <div class="card-title">Quote medici (da anagrafica)</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Cognome</th><th>Accordo</th><th>Tipo</th></tr></thead>
+            <tbody id="quote-tbody"></tbody>
           </table>
-        </div>
-
-        <div class="qe-add-card">
-          <div class="qe-add-title">+ Aggiungi medico</div>
-          <div class="qe-add-grid">
-            <div>
-              <label>Cognome</label>
-              <input type="text" id="qe-new-cog" placeholder="es. ROSSI" style="text-transform:uppercase">
-            </div>
-            <div>
-              <label>Tipo</label>
-              <select id="qe-new-tipo">
-                <option value="pct">Percentuale (%)</option>
-                <option value="fisso">Importo fisso (€)</option>
-              </select>
-            </div>
-            <div>
-              <label>Valore</label>
-              <input type="number" id="qe-new-val" placeholder="es. 70" min="0" max="100" step="0.5">
-            </div>
-            <div>
-              <label>Note</label>
-              <input type="text" id="qe-new-note" placeholder="es. 70/30">
-            </div>
-            <div>
-              <label>&nbsp;</label>
-              <button class="btn btn-primary btn-sm" onclick="qeAggiungi()">Aggiungi</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -554,337 +276,285 @@ input[type=file]{display:none}
   </div>
 </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
-const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const DET = 0.06 * 1.22;
-const RIT = 0.20;
-
-const DB = {
-  "ABRATE":{pct:null,fisso:35,note:"€35 a trattamento podologico"},
-  "ALESSI":{pct:70,note:"70/30"},"ALGERI":{pct:80,note:"80/20"},
-  "ACCORNERO":{pct:70,note:"70/30"},"ADINOLFI":{pct:70,note:"70/30"},
-  "ANGILLETTA":{pct:70,note:"70/30"},"BONO":{pct:60,note:"60/40"},
-  "BUONAIUTO":{pct:null,fisso:105,note:"€105 vis, €50 eco"},
-  "CALCAGNI":{pct:20,tipo:"ginecologa",fisso_tampone:15,note:"20% visita + €15 tamponi"},"CANTIANI":{pct:80,note:"80/20"},
-  "CAPUANO":{pct:70,note:"70/30"},"CASTORO":{pct:60,note:"60%"},
-  "CAZZANIGA":{pct:null,fisso_vis:105,fisso_eco:70,note:"€105 vis, €70 eco"},
-  "COCCIOLO":{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:"€50 eco, €95 onc, €75 ctrl"},
-  "COLAFRANCESCO":{pct:60,note:"60/40"},"COSTANTINI":{pct:50,note:"50%"},
-  "EGIDDI":{pct:null,fisso_prima:60,fisso_ctrl:45,note:"€60 I vis, €45 ctrl/eco"},
-  "ERGASTI":{pct:60,note:"60/40"},"FANTI":{pct:60,note:"60%"},
-  "FRISOTTI":{pct:null,fisso:65,note:"€65 a visita"},
-  "GASPARINI":{pct:65,note:"65%"},"GHEZZI":{pct:60,note:"60/40"},
-  "GIOMBI":{pct:60,note:"60/40"},"GIRARDENGO":{pct:60,note:"60/40"},
-  "GOBITTO":{pct:null,fisso:35,note:"€35 a trattamento"},
-  "ISIDORI":{pct:60,note:"60%"},"LENTI":{pct:null,fisso:50,note:"€50 a visita"},
-  "LOMMANO":{pct:70,note:"70/30"},"LUGLIO":{pct:80,note:"80/20"},
-  "MACCHIONE":{pct:70,note:"70/30"},"MAINARDI":{pct:65,note:"65%"},
-  "MAISTO":{pct:null,fisso:50,note:"€50 per eco"},
-  "MASCHERONI":{pct:70,note:"70%"},"MASSARO":{pct:75,note:"75%"},
-  "MEAZZA":{pct:60,note:"60%"},"MENZEL":{pct:70,note:"70/30"},
-  "MOGGI":{pct:null,fisso:35,note:"€35 a trattamento"},
-  "MONESTIER":{pct:50,note:"50%"},
-  "MUNGIOLI":{pct:null,fisso_seduta:35,fisso_ctrl:25,note:"€35 seduta, €25 ctrl"},
-  "MURARI":{pct:60,note:"60%"},"NICORA":{pct:60,note:"60%"},
-  "PADULA":{pct:60,tipo:"ginecologa",fisso_tampone:15,note:"60% visita + €15 tamponi"},"PAGLIARO":{pct:70,note:"70/30"},
-  "PANE":{pct:60,note:"60%"},"PEDULLA":{pct:null,fisso:35,note:"€35 a trattamento"},
-  "PELAMATTI":{pct:70,note:"70/30"},"POZIELLO":{pct:65,note:"65%"},
-  "QUARANTA":{pct:70,note:"70/30"},"ROVEDA":{pct:60,note:"60%"},
-  "SARAIS":{pct:70,tipo:"ginecologa",fisso_tampone:15,note:"70% visita + €15 tamponi"},"SCARABEO":{pct:70,note:"70/30"},
-  "SINISI":{pct:70,note:"70/30"},"STROPPA":{pct:70,note:"70/30"},
-  "TACCONI":{pct:70,note:"70/30"},"VITALE":{pct:60,note:"60%"},
-  "ZANARDI":{pct:70,note:"70%"},"ZANINETTI":{pct:65,note:"65%"},
-  "ZAMPELLA":{pct:70,note:"70/30"},
+// ── STATO ──────────────────────────────────────────────────
+const S = {
+  xmlIndex: {},      // normPaz|normData → [{imp, desc, cognomeMedico}]
+  xlsCorr: {},       // cognome → [{sede, righe:[{data,paziente,desc,imp}], subtotale}]
+  gestionale: {},    // normPaz|normData → [{medico, cognomeMedico, tipo}]
+  portali: {},       // cognome → [{paziente, data, importo, portale}]
+  idoctors: [],      // lista piatta
+  risultati: []
 };
 
-let S = {rg:[],zara:[],portali:{},risultati:[],xls_corr:{},idoctors:[]};
+// ── COSTANTI ───────────────────────────────────────────────
+const DET = 0.06 * 1.22; // 7.32%
+const RIT = 0.20;
+const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
-function updatePeriodo(){
-  const m=document.getElementById('sel-mese').value;
-  const a=document.getElementById('sel-anno').value;
-  document.getElementById('sb-periodo').textContent=MESI[+m]+' '+a;
+const DB = {
+  ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,note:'70%'},
+  ADINOLFI:{pct:70,note:'70%'},ALESSI:{pct:70,note:'70%'},
+  ALGERI:{pct:80,note:'80%'},ANGILLETTA:{pct:70,note:'70%'},
+  BONO:{pct:60,note:'60%'},BUONAIUTO:{fisso:105,note:'€105 vis €50 eco'},
+  CALCAGNI:{pct:20,tipo:'gin',fisso_t:15,note:'20% + €15 tamponi'},
+  CANTIANI:{pct:80,note:'80%'},CAPUANO:{pct:70,note:'70%'},
+  CASTORO:{pct:60,note:'60%'},
+  CAZZANIGA:{pct:null,fisso_vis:105,fisso_eco:70,note:'€105 vis €70 eco'},
+  COCCIOLO:{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:'€50 eco'},
+  COLAFRANCESCO:{pct:60,note:'60%'},COSTANTINI:{pct:50,note:'50%'},
+  EGIDDI:{pct:null,fisso_prima:60,fisso_ctrl:45,note:'€60 prima €45 ctrl'},
+  ERGASTI:{pct:60,note:'60%'},FANTI:{pct:60,note:'60%'},
+  FRISOTTI:{fisso:65,note:'€65 visita'},GASPARINI:{pct:65,note:'65%'},
+  GHEZZI:{pct:60,note:'60%'},GIOMBI:{pct:60,note:'60%'},
+  GIRARDENGO:{pct:60,note:'60%'},GOBITTO:{fisso:35,note:'€35 trattamento'},
+  ISIDORI:{pct:60,note:'60%'},LENTI:{fisso:50,note:'€50 visita'},
+  LOMMANO:{pct:70,note:'70%'},LUGLIO:{pct:80,note:'80%'},
+  MACCHIONE:{pct:70,note:'70%'},MAINARDI:{pct:65,note:'65%'},
+  MAISTO:{fisso:50,note:'€50 eco'},MASCHERONI:{pct:70,note:'70%'},
+  MASSARO:{pct:75,note:'75%'},MEAZZA:{pct:60,note:'60%'},
+  MENZEL:{pct:70,note:'70%'},MOGGI:{fisso:35,note:'€35 trattamento'},
+  MONESTIER:{pct:50,note:'50%'},
+  MUNGIOLI:{pct:null,fisso_sed:35,fisso_ctrl:25,note:'€35 sed €25 ctrl'},
+  MURARI:{pct:60,note:'60%'},NICORA:{pct:60,note:'60%'},
+  PADULA:{pct:60,tipo:'gin',fisso_t:15,note:'60% + €15 tamponi'},
+  PAGLIARO:{pct:70,note:'70%'},PANE:{pct:60,note:'60%'},
+  PEDULLA:{fisso:35,note:'€35 trattamento'},PELAMATTI:{pct:70,note:'70%'},
+  POZIELLO:{pct:65,note:'65%'},QUARANTA:{pct:70,note:'70%'},
+  ROVEDA:{pct:60,note:'60%'},
+  SARAIS:{pct:70,tipo:'gin',fisso_t:15,note:'70% + €15 tamponi'},
+  SCARABEO:{pct:70,note:'70%'},SINISI:{pct:70,note:'70%'},
+  STROPPA:{pct:70,note:'70%'},TACCONI:{pct:70,note:'70%'},
+  VITALE:{pct:60,note:'60%'},ZANARDI:{pct:70,note:'70%'},
+  ZANINETTI:{pct:65,note:'65%'},ZAMPELLA:{pct:70,note:'70%'},
+};
+
+// ── HELPERS ────────────────────────────────────────────────
+const fmt = n => Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK = n => Math.round(n).toLocaleString('it-IT');
+
+function normStr(s){
+  return String(s||'').toLowerCase().trim()
+    .replace(/dr\.?s?\.?\s*/i,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
 }
-updatePeriodo();
-
-function nav(el,id){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const pg = document.getElementById('page-'+id);
-  if(pg) pg.classList.add('active');
-  const titles={carica:'Carica file mensili',verifica:'Verifica & Match',corrispettivi:'Corrispettivi da inviare',incongruenze:'Incongruenze rilevate',quote:'Quote & Configurazione'};
-  const tb = document.getElementById('tb-title');
-  if(tb) tb.textContent=titles[id]||id;
-  // Se apro le quote, aggiorno la tabella
-  if(id==='quote') qeRender();
-}
-
-function dzOn(e,id){e.preventDefault();document.getElementById(id).classList.add('drag')}
-function dzOff(id){document.getElementById(id).classList.remove('drag')}
-function dzDrop(e,id,t){e.preventDefault();dzOff(id);if(e.dataTransfer.files.length)processFiles(e.dataTransfer.files,t,id)}
-function handleF(inp,t,dz){if(inp.files.length)processFiles(inp.files,t,dz)}
-
-function processFiles(files,tipo,dzId){
-  const dz=document.getElementById(dzId);
-  const info=document.getElementById(dzId+'-info');
-  dz.classList.add('loaded');
-  info.textContent='✓ '+files.length+' file caricati';
-  if(tipo==='xls_corr'){
-    Array.from(files).forEach(function(f){
-      var r=new FileReader();
-      r.onload=function(e){parseXLSCorr(e.target.result,f.name);};
-      r.readAsArrayBuffer(f);
-    });
-    return;
-  }
-  if(tipo==='gestionale'){
-    Array.from(files).forEach(function(f){
-      var r=new FileReader();
-      r.onload=function(e){parseGestionale(e.target.result,f.name);};
-      r.readAsArrayBuffer(f);
-    });
-    return;
-  }
-  if(tipo==='rg'||tipo==='zara'){
-    Array.from(files).forEach(function(f){
-      var r=new FileReader();
-      r.onload=function(e){parseZipXML(e.target.result,tipo,dzId);};
-      r.readAsArrayBuffer(f);
-    });
-    return;
-  }
-  if(tipo==='idoctors'||tipo==='davinci'){
-    Array.from(files).forEach(f=>{
-      const r=new FileReader();
-      r.onload=e=>parsePortale(e.target.result,tipo,f.name);
-      r.readAsArrayBuffer(f);
-    });
-  }
+function normDate(s){
+  return String(s||'').trim().replace(/\s.*$/,'').trim();
 }
 
-function parseGestionale(buf, fname){
-  try {
-    var wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-    if(rows.length < 2) return;
-
-    // Header: DataVisita, OraVisita, TipoVisita, CodiceFiscale, Cognome, Nome, ..., Medico, StatoVisita
-    var h = rows[0].map(function(c){return String(c).toLowerCase().trim();});
-    var iData = h.indexOf('datavisita');
-    var iTipo = h.indexOf('tipovisita');
-    var iCognome = h.indexOf('cognome');
-    var iNome = h.indexOf('nome');
-    var iMedico = h.indexOf('medico');
-    var iStato = h.indexOf('statovisita');
-
-    if(iData<0||iMedico<0) { showToast('Export non riconosciuto'); return; }
-
-    var count = 0;
-    for(var i=1;i<rows.length;i++){
-      var r = rows[i];
-      var stato = String(r[iStato]||'').toUpperCase();
-      if(stato==='ANNULLATO') continue;
-
-      var data = String(r[iData]||'').trim();
-      var tipo = String(r[iTipo]||'').trim();
-      var cognome = String(r[iCognome]||'').trim().toUpperCase();
-      var nome = String(r[iNome]||'').trim().toUpperCase();
-      var medico = String(r[iMedico]||'').trim().toUpperCase();
-      var paziente = cognome+' '+nome;
-
-      // Estrai cognome medico per match con DB
-      var cognomeMedico = medico.split(' ')[0];
-
-      var key = normName(paziente)+'|'+normDate(data);
-      if(!S.gestionale[key]) S.gestionale[key] = [];
-      S.gestionale[key].push({
-        data:data, paziente:paziente, tipo:tipo,
-        medico:medico, cognomeMedico:cognomeMedico
-      });
-      count++;
-    }
-
-    var info = document.getElementById('dz-gest-info');
-    if(info){ info.textContent = count+' appuntamenti caricati'; }
-    document.getElementById('dz-gest').classList.add('loaded');
-    showToast('Gestionale: '+count+' appuntamenti caricati');
-  } catch(e){ showToast('Errore gestionale: '+e.message); }
+function isTampone(desc){
+  const d = String(desc||'').toLowerCase();
+  return d.includes('tampone')||d.includes('pap test')||d.includes('pap-test')||d.includes('hpv');
 }
 
+function estraiCognomeMedico(desc){
+  const d = String(desc||'').toUpperCase();
+  // Pattern "TESTO - COGNOME NOME" o "TESTO– COGNOME"
+  const m = d.match(/[-\u2013]\s*([A-Z]{2,})/);
+  if(m){
+    const cog = m[1].trim();
+    if(DB[cog]) return cog;
+  }
+  // Cerca nel DB
+  return Object.keys(DB).find(k => d.includes(k)) || '';
+}
+
+function calcComp(q, imp, desc){
+  if(q.tipo==='gin' && isTampone(desc)) return q.fisso_t||15;
+  if(q.fisso) return q.fisso;
+  if(q.pct) return imp * q.pct/100;
+  return imp * 0.5;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ── NAVIGAZIONE ────────────────────────────────────────────
+const TITLES = {carica:'Carica file',verifica:'Verifica & Match',corrispettivi:'Corrispettivi',quote:'Quote medici'};
+function goTo(el, id){
+  document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('page-'+id).classList.add('on');
+  document.getElementById('tb-title').textContent = TITLES[id]||id;
+}
+
+// ── DROP ZONE ──────────────────────────────────────────────
+function fi(id){ document.getElementById(id).click(); }
+function dzon(e,id){ e.preventDefault(); document.getElementById(id).classList.add('drag'); }
+function dzoff(id){ document.getElementById(id).classList.remove('drag'); }
+function dzdrop(e,id,tipo){ e.preventDefault(); dzoff(id); if(e.dataTransfer.files.length) processFiles(e.dataTransfer.files,tipo,id); }
+function load(inp,tipo,dzId,infoId){ if(inp.files.length) processFiles(inp.files,tipo,dzId); }
+
+function processFiles(files, tipo, dzId){
+  const dz = document.getElementById(dzId);
+  Array.from(files).forEach(f=>{
+    const r = new FileReader();
+    r.onload = e=>{
+      if(tipo==='rg'||tipo==='zara') parseZipXML(e.target.result, tipo, dzId);
+      else if(tipo==='xls') parseXLSCorr(e.target.result, f.name);
+      else if(tipo==='gest') parseGestionale(e.target.result);
+      else if(tipo==='portale') parsePortale(e.target.result, f.name);
+    };
+    r.readAsArrayBuffer(f);
+  });
+  dz.classList.add('ok');
+  const info = dz.querySelector('.dz-info');
+  if(info) info.textContent = '✓ '+files.length+' file';
+}
+
+// ── PARSER ZIP XML ─────────────────────────────────────────
 function parseZipXML(buf, sede, dzId){
-  JSZip.loadAsync(buf).then(function(zip){
-    var xmlFiles = Object.keys(zip.files).filter(function(n){return n.endsWith('.xml');});
-    var promises = xmlFiles.map(function(name){
-      return zip.files[name].async('string').then(function(content){
-        return parseXMLFattura(content, sede);
+  JSZip.loadAsync(buf).then(zip=>{
+    const xmlFiles = Object.keys(zip.files).filter(n=>n.toLowerCase().endsWith('.xml'));
+    let count = 0;
+    const proms = xmlFiles.map(name=>
+      zip.files[name].async('string').then(xml=>{
+        const riga = parseXMLFattura(xml, sede);
+        if(riga){ count++; return riga; }
+        return null;
+      })
+    );
+    Promise.all(proms).then(righe=>{
+      righe.filter(Boolean).forEach(riga=>{
+        if(!S.xmlIndex[riga.key]) S.xmlIndex[riga.key]=[];
+        S.xmlIndex[riga.key].push(riga);
       });
+      const info = document.getElementById('i-'+sede);
+      if(info) info.textContent = '✓ '+count+' fatture';
+      toast('XML '+sede.toUpperCase()+': '+count+' fatture caricate');
     });
-    Promise.all(promises).then(function(results){
-      results.forEach(function(riga){
-        if(!riga) return;
-        if(sede==='rg') S.rg.push(riga);
-        else S.zara.push(riga);
-      });
-      // Aggiorna UI
-      var info = document.getElementById(dzId+'-info');
-      if(info){
-        var tot = sede==='rg' ? S.rg.length : S.zara.length;
-        info.textContent = tot+' fatture caricate';
-        document.getElementById(dzId).classList.add('loaded');
-      }
-    });
-  }).catch(function(e){ showToast('Errore ZIP: '+e.message); });
+  }).catch(e=>toast('Errore ZIP: '+e.message));
 }
 
 function parseXMLFattura(xmlStr, sede){
-  try {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(xmlStr, 'text/xml');
-    var get = function(sel){ var el=doc.querySelector(sel); return el?el.textContent.trim():''; };
+  try{
+    const doc = new DOMParser().parseFromString(xmlStr,'text/xml');
+    const g = sel => { const el=doc.querySelector(sel); return el?el.textContent.trim():''; };
+    const data = normDate(g('Data'));
+    const totale = parseFloat(g('ImportoTotaleDocumento'))||0;
+    const bollo = parseFloat(g('DatiBollo ImportoBollo'))||0;
+    const nomePaz = g('CessionarioCommittente Nome');
+    const cogPaz = g('CessionarioCommittente Cognome');
+    const paziente = (cogPaz+' '+nomePaz).trim();
 
-    var data = get('Data');
-    var totaleStr = get('ImportoTotaleDocumento');
-    var bolloStr = get('DatiBollo ImportoBollo');
-    var totale = parseFloat(totaleStr)||0;
-    var bollo = parseFloat(bolloStr)||0;
-
-    var nomePaz = get('CessionarioCommittente Nome');
-    var cognomePaz = get('CessionarioCommittente Cognome');
-    var paziente = (cognomePaz+' '+nomePaz).trim();
-
-    // Prestazioni (escludi bollo)
-    var linee = doc.querySelectorAll('DettaglioLinee');
-    var righeXML = [];
-    linee.forEach(function(linea){
-      var desc = linea.querySelector('Descrizione');
-      var prezzo = linea.querySelector('PrezzoTotale');
-      var natura = linea.querySelector('Natura');
-      if(!desc) return;
-      var descTxt = desc.textContent.trim();
-      var prezzoVal = parseFloat((prezzo?prezzo.textContent:'0').replace(',','.'))||0;
-      if(natura && natura.textContent.trim()==='N1') return; // bollo
-      if(descTxt.toUpperCase()==='IMPOSTA DI BOLLO') return;
-
-      // Estrai cognome medico dalla descrizione
-      var cognomeMedico = estraiCognomeDaDesc(descTxt);
-      if(!cognomeMedico) return;
-
-      righeXML.push({
-        cognomeMedico: cognomeMedico,
-        paziente: paziente,
-        data: data,
-        desc: descTxt,
-        imp_fattura: prezzoVal,
-        sede: sede
-      });
+    let imp=0, desc='', cognomeMedico='';
+    doc.querySelectorAll('DettaglioLinee').forEach(linea=>{
+      const nat = linea.querySelector('Natura');
+      if(nat && nat.textContent.trim()==='N1') return;
+      const d = linea.querySelector('Descrizione');
+      const p = linea.querySelector('PrezzoTotale');
+      if(!d) return;
+      const descTxt = d.textContent.trim();
+      if(descTxt.toUpperCase().includes('BOLLO')) return;
+      desc = descTxt;
+      imp = parseFloat((p?p.textContent:'0').replace(',','.'))||0;
+      cognomeMedico = estraiCognomeMedico(descTxt);
     });
 
-    if(righeXML.length===0) return null;
-
-    // Ritorna un oggetto per riga (una fattura può avere più prestazioni/medici)
-    // Ma di solito è 1 prestazione per fattura
-    return {
-      cognome: righeXML[0].cognomeMedico,
-      fatturato: totale - bollo,
-      prestazioni: righeXML.length,
-      sedi: [sede],
-      righeXML: righeXML
-    };
-  } catch(e){ return null; }
+    const key = normStr(paziente)+'|'+data;
+    return {key, paziente, data, desc, imp, cognomeMedico, sede};
+  }catch(e){return null;}
 }
 
-function estraiCognomeDaDesc(desc){
-  // "PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE" → "MONESTIER"
-  var d = desc.toUpperCase();
-  // Pattern: testo - COGNOME NOME
-  var match = d.match(/[-–]\s*([A-Z]+(?:\s+[A-Z]+)?)/);
-  if(match){
-    var cognome = match[1].trim().split(/\s+/)[0];
-    // Verifica che sia un cognome nel DB
-    if(DB[cognome]) return cognome;
-    // Prova tutti i cognomi del DB
-    var found = Object.keys(DB).find(function(k){ return d.includes(k); });
-    if(found) return found;
-    // Se non trovato nel DB ma pattern valido, usa comunque il cognome estratto
-    if(cognome.length > 2) return cognome;
-  }
-  // Cerca direttamente nel DB
-  return Object.keys(DB).find(function(k){ return d.includes(k); }) || '';
-}
+// ── PARSER XLS CORRISPETTIVI ───────────────────────────────
+function parseXLSCorr(buf, fname){
+  try{
+    const wb = XLSX.read(new Uint8Array(buf),{type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
 
-function parseXLSCorr(buf,fname){
-  try {
-    var wb = XLSX.read(new Uint8Array(buf),{type:'array'});
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    // R1: "Report compensi COGNOME NOME"
+    const h0 = String(rows[0]&&rows[0][0]||'');
+    const cogRaw = h0.replace(/report compensi/i,'').trim().toUpperCase().split(/\s+/)[0];
+    if(!cogRaw) return;
 
-    // Riga 1: "Report compensi COGNOME NOME"
-    var header = String(rows[0]&&rows[0][0]||'');
-    var cognomeRaw = header.replace(/report compensi/i,'').trim().toUpperCase();
-    var cognome = cognomeRaw.split(/\s+/)[0];
+    const ambulatorio = String(rows[1]&&rows[1][1]||'');
+    const sede = ambulatorio.toLowerCase().includes('zara')?'ZARA':'RG';
 
-    // Riga 2: ambulatorio
-    var ambulatorio = String(rows[1]&&rows[1][1]||'');
+    // R5: header colonne (Data, Paziente, [prestazioni...])
+    const headers = (rows[4]||[]).map(c=>String(c).replace(/\n/g,' ').trim());
 
-    // Riga 3: periodo
-    var periodoFrom = String(rows[2]&&rows[2][1]||'');
-    var periodoTo   = String(rows[2]&&rows[2][2]||'');
+    const righe = [];
+    let subtotale = 0;
 
-    // Riga 5: header colonne (Data, Paziente, Descrizione prestazione)
-    var descHeader = String(rows[4]&&rows[4][2]||'').replace(/\n/g,' ').trim();
-
-    // Righe 6..N: dati prestazioni
-    var righe = [];
-    var subtotale = 0;
-    for(var i=5;i<rows.length;i++){
-      var r = rows[i];
-      var data = String(r[0]||'').trim();
-      var paziente = String(r[1]||'').trim();
-      var importoRaw = r[2];
-      var importo = parseFloat(String(importoRaw).replace(',','.')) || 0;
-
-      if(paziente.toLowerCase().includes('subtotal') || paziente.toLowerCase().includes('totale')) {
-        if(importo > 0) subtotale = importo;
-        // Prova col[3]
-        var alt = parseFloat(String(r[3]||'').replace(',','.')) || 0;
-        if(alt > 0) subtotale = alt;
+    for(let i=5;i<rows.length;i++){
+      const r = rows[i];
+      const data = String(r[0]||'').trim();
+      const paz = String(r[1]||'').trim();
+      if(!data||!paz) continue;
+      if(paz.toLowerCase().includes('subtotal')||paz.toLowerCase().includes('totale')||paz.toLowerCase().includes('ritenuta')||paz.toLowerCase().includes('netto')) {
+        // Prendi il subtotale
+        for(let c=2;c<r.length;c++){
+          const v = parseFloat(String(r[c]||'').replace(',','.'));
+          if(v>0) subtotale = v;
+        }
+        // Totale imponibile (ultima colonna spesso)
+        const lastCol = r[r.length-1];
+        if(parseFloat(String(lastCol||'').replace(',','.'))>0) subtotale = parseFloat(String(lastCol).replace(',','.'));
         continue;
       }
-      if(!data || !paziente || importo===0) continue;
-      if(data.toLowerCase()==='data') continue; // skip header
+      if(data.toLowerCase()==='data') continue;
 
-      // Data: prendo solo la parte data senza orario
-      var dataPulita = data.split(' - ')[0].trim();
-
-      righe.push({data:dataPulita, paziente:paziente, desc:descHeader, imp:importo});
+      // Trova importo (prima colonna non vuota dopo paziente)
+      let imp=0, desc='';
+      for(let c=2;c<r.length;c++){
+        const v = parseFloat(String(r[c]||'').replace(',','.'));
+        if(v>0){
+          imp=v;
+          desc = headers[c]||'Prestazione';
+          break;
+        }
+      }
+      if(!imp) continue;
+      const dataPulita = data.split(' - ')[0].trim().split(' ')[0].trim();
+      righe.push({data:dataPulita, paziente:paz.toUpperCase(), desc, imp});
     }
 
-    if(!cognome) return;
+    if(!S.xlsCorr[cogRaw]) S.xlsCorr[cogRaw]=[];
+    S.xlsCorr[cogRaw].push({sede, ambulatorio, righe, subtotale: subtotale||righe.reduce((s,r)=>s+r.imp,0)});
 
-    var sede = ambulatorio.toLowerCase().includes('zara') ? 'ZARA' : 'RG';
-
-    if(!S.xls_corr[cognome]) S.xls_corr[cognome] = [];
-    S.xls_corr[cognome].push({
-      sede:sede,
-      ambulatorio:ambulatorio,
-      periodoFrom:periodoFrom,
-      periodoTo:periodoTo,
-      righe:righe,
-      subtotale:subtotale||righe.reduce(function(s,r){return s+r.imp;},0)
-    });
-
-    // Aggiorna info
-    var info = document.getElementById('dz-xls-info');
-    if(info){
-      var tot = Object.keys(S.xls_corr).length;
-      info.textContent = tot + ' medici caricati';
-    }
-  } catch(e){ console.error('parseXLSCorr error:',e,fname); }
+    const info = document.getElementById('i-xls');
+    if(info) info.textContent = '✓ '+Object.keys(S.xlsCorr).length+' medici';
+  }catch(e){ console.error('XLS parse error:',e,fname); }
 }
 
-function parsePortale(buf,tipo,fname){
+// ── PARSER GESTIONALE ──────────────────────────────────────
+function parseGestionale(buf){
+  try{
+    const wb = XLSX.read(new Uint8Array(buf),{type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    const h = rows[0].map(c=>String(c).toLowerCase().trim());
+    const iData=h.indexOf('datavisita'), iCog=h.indexOf('cognome');
+    const iNome=h.indexOf('nome'), iMed=h.indexOf('medico');
+    const iStato=h.indexOf('statovisita'), iTipo=h.indexOf('tipovisita');
+    if(iData<0||iMed<0) return;
+    let count=0;
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      if(String(r[iStato]||'').toUpperCase()==='ANNULLATO') continue;
+      const data=normDate(String(r[iData]||''));
+      const paz=(String(r[iCog]||'').toUpperCase()+' '+String(r[iNome]||'').toUpperCase()).trim();
+      const med=String(r[iMed]||'').trim().toUpperCase();
+      const cogMed=med.split(' ')[0];
+      const key=normStr(paz)+'|'+data;
+      if(!S.gestionale[key]) S.gestionale[key]=[];
+      S.gestionale[key].push({medico:med,cognomeMedico:cogMed,tipo:String(r[iTipo]||'')});
+      count++;
+    }
+    const info=document.getElementById('i-gest');
+    if(info) info.textContent='✓ '+count+' appuntamenti';
+    toast('Gestionale: '+count+' appuntamenti');
+  }catch(e){ toast('Errore gestionale: '+e.message); }
+}
+
+// ── PARSER PORTALI ─────────────────────────────────────────
+function parsePortale(buf, fname){
   try{
     const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
@@ -892,719 +562,345 @@ function parsePortale(buf,tipo,fname){
     let hi=-1,cols={};
     for(let i=0;i<Math.min(5,rows.length);i++){
       const r=rows[i].map(c=>String(c).toLowerCase());
-      if(r.some(c=>c.includes('paziente')||c.includes('dottore')||c.includes('medico'))){
+      if(r.some(c=>c.includes('paziente')||c.includes('medico'))){
         hi=i;
         r.forEach((c,j)=>{
-          if(c.includes('paziente')||c.includes('patient'))cols.paziente=j;
-          if(c.includes('dottore')||c.includes('medico'))cols.medico=j;
-          if(c.includes('data'))cols.data=j;
-          if(c.includes('importo')||c.includes('prezzo')||c.includes('price'))cols.importo=j;
-          if(c.includes('stato'))cols.stato=j;
+          if(c.includes('paziente')) cols.paz=j;
+          if(c.includes('medico')||c.includes('dottore')) cols.med=j;
+          if(c.includes('data')||c.includes('giorno')) cols.data=j;
+          if(c.includes('importo')||c.includes('prezzo')) cols.imp=j;
         });
         break;
       }
     }
-    if(hi===-1)return;
+    if(hi<0) return;
+    let count=0;
+    const portale = fname.toLowerCase().includes('davinci')?'Davinci':fname.toLowerCase().includes('doctolib')?'Doctolib':'iDoctors';
     for(let i=hi+1;i<rows.length;i++){
       const r=rows[i];
-      const med=String(r[cols.medico]||'').trim();
-      if(!med)continue;
-      const stato=String(r[cols.stato]||'').toUpperCase();
-      if(stato&&stato.includes('NON ESEG'))continue;
-      const cog=cognome(med);
-      if(!S.portali[cog])S.portali[cog]=[];
-      const imp=parseFloat(String(r[cols.importo]||0).replace(/[€$\s]/g,'').replace(',','.'))||0;
-      var entry = {paziente:String(r[cols.paziente]||''),data:String(r[cols.data]||''),importo:imp,portale:tipo==='idoctors'?'iDoctors':'Davinci/Elty',medico:med,cognome:cog};
-      S.portali[cog].push(entry);
-      if(tipo==='idoctors') S.idoctors.push(entry);
+      const med=String(r[cols.med]||'').trim();
+      if(!med) continue;
+      const cogMed=med.replace(/^dr\.?s?\.?\s*/i,'').trim().toUpperCase().split(/\s+/)[0];
+      const imp=parseFloat(String(r[cols.imp]||'0').replace(/[€\s]/g,'').replace(',','.'))||0;
+      const entry={
+        paziente:String(r[cols.paz]||'').trim(),
+        data:normDate(String(r[cols.data]||'')),
+        importo:imp, portale, cognomeMedico:cogMed
+      };
+      if(!S.portali[cogMed]) S.portali[cogMed]=[];
+      S.portali[cogMed].push(entry);
+      S.idoctors.push(entry);
+      count++;
     }
-  }catch(e){console.error(e)}
+    const info=document.getElementById('i-port');
+    if(info) info.textContent='✓ '+count+' prenotazioni';
+    toast(portale+': '+count+' prenotazioni');
+  }catch(e){ toast('Errore portale: '+e.message); }
 }
 
-function cognome(n){
-  const c=n.replace(/^dr\.?s?\.?\s*/i,'').trim().toUpperCase().split(/\s+/);
-  return c[c.length>1?c.length-1:0];
-}
-
-function demo(){
-  S.rg=[
-    {cognome:'MEAZZA',prestazioni:48,fatturato:6840,sede:'RG'},
-    {cognome:'GOBITTO',prestazioni:44,fatturato:3080,sede:'RG'},
-    {cognome:'NICORA',prestazioni:27,fatturato:3500,sede:'RG'},
-    {cognome:'ABRATE',prestazioni:23,fatturato:805,sede:'RG',dettaglio:[
-      {data:'02/04/2026',paziente:'BESTETTI LAURA',desc:'Trattamento Podologico',imp:35},
-      {data:'02/04/2026',paziente:'CECCONI MAURIZIO',desc:'Trattamento Podologico',imp:35},
-      {data:'02/04/2026',paziente:'BUSACCA ALBERTO',desc:'Trattamento Podologico',imp:35},
-      {data:'09/04/2026',paziente:'BERNASCONI FILIPPO',desc:'Trattamento Podologico',imp:35},
-      {data:'09/04/2026',paziente:'FERMO BEATRICE',desc:'Trattamento Podologico',imp:35},
-      {data:'23/04/2026',paziente:'YILMAZ MINA',desc:'Trattamento Podologico',imp:35},
-      {data:'23/04/2026',paziente:'INTINI ANGELICA',desc:'Trattamento Podologico',imp:35},
-      {data:'30/04/2026',paziente:'SLAVIERO STEFANO',desc:'Trattamento Podologico',imp:35},
+// ── DEMO ───────────────────────────────────────────────────
+function loadDemo(){
+  // Dati demo basati su Monestier aprile 2026
+  S.xlsCorr['MONESTIER']=[
+    {sede:'ZARA',ambulatorio:'MedNow Viale Zara',subtotale:5389,righe:[
+      {data:'02/04/2026',paziente:'DA SILVA ADRIEN',desc:'Prima Visita Dermatologica',imp:65},
+      {data:'02/04/2026',paziente:'COSTA SILVIA',desc:'Prima Visita Dermatologica',imp:65},
+      {data:'03/04/2026',paziente:'VALDERRAMA VASQUEZ NICOLAS',desc:'Prima Visita Dermatologica',imp:65},
+      {data:'03/04/2026',paziente:'PENG XIAO BEI SARA',desc:'Visita Dermatologica Controllo',imp:50},
     ]},
-    {cognome:'CAZZANIGA',prestazioni:7,fatturato:900,sede:'RG'},
-    {cognome:'MONESTIER',prestazioni:47,fatturato:6110,sede:'RG'},
-    {cognome:'LENTI',prestazioni:14,fatturato:1820,sede:'RG'},
-    {cognome:'MURGIA',prestazioni:13,fatturato:1690,sede:'RG'},
-    // Ginecologhe con quota mista (demo)
-    {cognome:'SARAIS',prestazioni:12,fatturato:1950,sede:'RG',dettaglio:[
-      {desc:'Visita ginecologica',imp:150},{desc:'Visita ginecologica di controllo',imp:100},
-      {desc:'Tampone vaginale',imp:50},{desc:'Tampone cervicale',imp:50},
-      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
-      {desc:'Colposcopia',imp:200},{desc:'Visita ginecologica',imp:150},
-      {desc:'Tampone cervicale',imp:50},{desc:'Visita ginecologica di controllo',imp:100},
-      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
-    ]},
-    {cognome:'CALCAGNI',prestazioni:8,fatturato:1100,sede:'RG',dettaglio:[
-      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
-      {desc:'Visita ginecologica di controllo',imp:100},{desc:'Tampone cervicale',imp:50},
-      {desc:'Colposcopia',imp:200},{desc:'Tampone vaginale',imp:50},
-      {desc:'Visita ginecologica',imp:150},{desc:'Tampone cervicale',imp:50},
-    ]},
+    {sede:'RG',ambulatorio:'MedNow Regina Giovanna',subtotale:1127.5,righe:[
+      {data:'14/04/2026',paziente:'GAO QI',desc:'Prima Visita Dermatologica',imp:65},
+      {data:'21/04/2026',paziente:'FARINA MARIO',desc:'Prima Visita Dermatologica',imp:65},
+    ]}
   ];
-  S.zara=[
-    {cognome:'MEAZZA',prestazioni:133,fatturato:19100,sede:'ZARA'},
-    {cognome:'NICORA',prestazioni:69,fatturato:9000,sede:'ZARA'},
-    {cognome:'MOGGI',prestazioni:100,fatturato:7000,sede:'ZARA'},
-    {cognome:'MUNGIOLI',prestazioni:76,fatturato:5320,sede:'ZARA'},
-    {cognome:'GOBITTO',prestazioni:45,fatturato:3110,sede:'ZARA'},
-    {cognome:'COCCIOLO',prestazioni:93,fatturato:8370,sede:'ZARA'},
-    {cognome:'MONESTIER',prestazioni:177,fatturato:23010,sede:'ZARA'},
-  ];
-  S.portali={
-    // imponibile = totale fattura - bollo (es. 152-2=150, 132-2=130)
-    'MEAZZA':[{paziente:'Marco Montoli',data:'08/01',importo:152,imponibile:150,portale:'iDoctors'},{paziente:'Matteo Lazzari',data:'15/01',importo:152,imponibile:150,portale:'iDoctors'}],
-    'MONESTIER':[{paziente:'Paolo Bottio',data:'13/01',importo:132,imponibile:130,portale:'iDoctors'},{paziente:'Zahara Karim',data:'20/01',importo:132,imponibile:130,portale:'iDoctors'}],
-    'MURARI':[{paziente:'Natalia Biart',data:'07/01',importo:152,imponibile:150,portale:'iDoctors'}],
-  };
-  ['dz-rg','dz-zara','dz-idoc'].forEach(id=>{
-    document.getElementById(id).classList.add('loaded');
-  });
-  document.getElementById('dz-rg-info').textContent='✓ Demo: 857 fatture RG';
-  document.getElementById('dz-zara-info').textContent='✓ Demo: 3124 fatture Zara';
-  document.getElementById('dz-idoc-info').textContent='✓ Demo: report iDoctors Gen 2026';
+  // XML demo
+  S.xmlIndex['da silva adrien|2026-04-02']=[{imp:130,desc:'PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE',cognomeMedico:'MONESTIER',sede:'ZARA'}];
+  S.xmlIndex['costa silvia|2026-04-02']=[{imp:130,desc:'PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE',cognomeMedico:'MONESTIER',sede:'ZARA'}];
+  S.xmlIndex['peng xiao bei sara|2026-04-02']=[{imp:100,desc:'VISITA DERMATOLOGICA DI CONTROLLO',cognomeMedico:'',sede:'ZARA'}];
+  S.xmlIndex['valderrama vasquez nicolas|2026-04-03']=[{imp:130,desc:'PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE',cognomeMedico:'MONESTIER',sede:'ZARA'}];
+  S.xmlIndex['gao qi|2026-04-14']=[{imp:130,desc:'PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE',cognomeMedico:'MONESTIER',sede:'RG'}];
+  S.xmlIndex['farina mario|2026-04-21']=[{imp:130,desc:'PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE',cognomeMedico:'MONESTIER',sede:'RG'}];
+  // Portale demo
+  S.portali['MONESTIER']=[{paziente:'Nicolas Valderrama Vasquez',data:'2026-04-03',importo:130,portale:'iDoctors',cognomeMedico:'MONESTIER'}];
+  S.idoctors = S.portali['MONESTIER'].slice();
+  ['dz-rg','dz-zara','dz-xls'].forEach(id=>document.getElementById(id).classList.add('ok'));
+  toast('Dati demo caricati');
 }
 
+// ── ELABORA ────────────────────────────────────────────────
 function elabora(){
-  const m=+document.getElementById('sel-mese').value;
-  const a=document.getElementById('sel-anno').value;
-  const meseNome=MESI[m];
-  S.risultati=[];
+  const m = parseInt(document.getElementById('sel-mese').value);
+  const a = document.getElementById('sel-anno').value;
+  const meseNome = MESI[m];
+  S.risultati = [];
 
-  // ── STEP 1: costruisci indice XML ──────────────────────────────────────
-  // Chiave: normName(paziente) + '|' + normDate(data)
-  // Valore: {imp_fattura, desc, paziente, data, sede}
-  var xmlIndex = {}; // paziente|data → [fatture]
-
-  [...S.rg,...S.zara].forEach(function(f){
-    if(!f.righeXML) return;
-    f.righeXML.forEach(function(riga){
-      var key = normName(riga.paziente)+'|'+normDate(riga.data);
-      if(!xmlIndex[key]) xmlIndex[key] = [];
-      xmlIndex[key].push(riga);
-    });
+  // Costruisci lista medici da XLS
+  const cogs = new Set(Object.keys(S.xlsCorr));
+  // Aggiungi medici trovati nell'XML se non hanno XLS
+  Object.values(S.xmlIndex).forEach(righe=>{
+    righe.forEach(r=>{ if(r.cognomeMedico) cogs.add(r.cognomeMedico); });
   });
 
-  var hasXML = Object.keys(xmlIndex).length > 0;
+  cogs.forEach(cog=>{
+    const q = DB[cog]||{pct:70,note:'70% (default)'};
+    const xlsData = S.xlsCorr[cog]||[];
+    const ppList = S.portali[cog]||[];
 
-  // ── STEP 2: per ogni medico con XLS caricato ───────────────────────────
-  var cogSet = {};
-  Object.keys(S.xls_corr).forEach(function(cog){ cogSet[cog]=true; });
-  // Aggiungi medici da XML se non hanno XLS
-  [...S.rg,...S.zara].forEach(function(f){ if(!cogSet[f.cognome]) cogSet[f.cognome]=true; });
+    let lordo=0, det=0;
+    const righeCalcolate=[];
+    const sedi=[];
 
-  Object.keys(cogSet).forEach(function(cog){
-    var q = DB[cog] || {pct:50, note:'50% (default)'};
-    var xlsData = S.xls_corr[cog];
-    var pp = S.portali[cog]||[];
-    var d = {fatturato:0, prestazioni:0, sedi:[], dettaglio:null};
-    var righeCalcolate = [];
-    var lordo = 0;
-    var det = 0;
+    if(xlsData.length>0){
+      // ── CON XLS: match paziente+data → XML → calcolo ──
+      xlsData.forEach(sede=>{
+        if(!sedi.includes(sede.sede)) sedi.push(sede.sede);
+        sede.righe.forEach(riga=>{
+          const keyNorm = normStr(riga.paziente)+'|'+normDate(riga.data).replace(/\//g,'-').replace(/^(\d{2})-(\d{2})-(\d{4})$/,'$3-$2-$1');
+          // Prova vari formati data
+          const dataVariants = [
+            normDate(riga.data),
+            normDate(riga.data).replace(/\//g,'-'),
+            normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3-$2-$1'),
+            normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3/$2/$1'),
+          ];
 
-    if(xlsData && xlsData.length > 0){
-      // ── MODALITA' PRINCIPALE: XLS + match XML ───────────────────────
-      xlsData.forEach(function(sede){
-        if(d.sedi.indexOf(sede.sede)<0) d.sedi.push(sede.sede);
+          let xmlMatch = null;
+          const pazNorm = normStr(riga.paziente);
 
-        sede.righe.forEach(function(riga){
-          // Cerca la fattura XML corrispondente (paziente + data)
-          var key = normName(riga.paziente)+'|'+normDate(riga.data);
+          // Cerca nell'xmlIndex con vari formati data
+          for(const dv of dataVariants){
+            const k = pazNorm+'|'+dv;
+            if(S.xmlIndex[k]){
+              const candidates = S.xmlIndex[k];
+              xmlMatch = candidates.find(x=>!x.cognomeMedico||x.cognomeMedico===cog)||candidates[0];
+              break;
+            }
+          }
 
-          // Match con gestionale prima (fonte autoritativa per medico+paziente+data)
-          var gestKey = normName(riga.paziente)+'|'+normDate(riga.data);
-          var gestMatch = S.gestionale[gestKey] ? S.gestionale[gestKey].find(function(g){
-            return g.cognomeMedico === cog;
-          }) : null;
-
-          // Match XML: paziente + data
-          var xmlRighe = xmlIndex[gestKey];
-          var xmlMatch = null;
-
-          if(xmlRighe && xmlRighe.length > 0){
-            if(xmlRighe.length === 1){
-              xmlMatch = xmlRighe[0];
-            } else {
-              // Con gestionale: prendi la fattura che corrisponde al tipo visita
-              if(gestMatch){
-                xmlMatch = xmlRighe.find(function(x){
-                  var descUp = x.desc.toUpperCase();
-                  var tipoUp = gestMatch.tipo.toUpperCase().split(' ')[0];
-                  return descUp.indexOf(tipoUp) >= 0;
-                }) || xmlRighe.find(function(x){
-                  return !x.cognomeMedico || x.cognomeMedico === cog;
-                }) || xmlRighe[0];
-              } else {
-                xmlMatch = xmlRighe.find(function(x){
-                  return !x.cognomeMedico || x.cognomeMedico === cog;
-                }) || xmlRighe[0];
+          // Se non trovato, prova con gestionale
+          if(!xmlMatch){
+            for(const dv of dataVariants){
+              const k = pazNorm+'|'+dv;
+              if(S.gestionale[k]){
+                const gm = S.gestionale[k].find(g=>g.cognomeMedico===cog);
+                if(gm){
+                  // Cerca XML solo per data
+                  const xmlPerData = Object.keys(S.xmlIndex).filter(k2=>k2.endsWith('|'+dv));
+                  if(xmlPerData.length>0) xmlMatch = S.xmlIndex[xmlPerData[0]][0];
+                }
+                break;
               }
             }
-          } else {
-            // Match parziale su cognome
-            var primaParola = normName(riga.paziente).split(' ')[0];
-            var dataRiga = normDate(riga.data);
-            var found = null;
-            Object.keys(xmlIndex).forEach(function(k){
-              if(found) return;
-              var parts = k.split('|');
-              if(parts[1]===dataRiga && parts[0].indexOf(primaParola)>=0){
-                found = xmlIndex[k][0];
-              }
-            });
-            xmlMatch = found;
           }
 
-          var imp_fattura = xmlMatch ? xmlMatch.imp_fattura : 0;
-          d.fatturato += imp_fattura;
+          const impFattura = xmlMatch ? xmlMatch.imp : 0;
+          const compBase = impFattura>0 ? calcComp(q, impFattura, riga.desc) : riga.imp;
 
-          // Calcolo compenso dalla quota sul fatturato XML
-          var compBase = 0;
-          if(q.tipo==='ginecologa' && isTampone(riga.desc)){
-            compBase = q.fisso_tampone||15;
-          } else if(q.fisso){
-            compBase = q.fisso;
-          } else if(q.pct && imp_fattura > 0){
-            compBase = imp_fattura * q.pct/100;
-          } else {
-            // Fallback: usa importo XLS come compenso
-            compBase = riga.imp;
+          // Match portale
+          let isPortale=false, impPortale=0, detrazione=0;
+          const pazWords = pazNorm.split(' ').filter(w=>w.length>2);
+          for(const p of S.idoctors){
+            if(p.cognomeMedico!==cog) continue;
+            const pDate = normDate(p.data).replace(/\//g,'-');
+            const matchData = dataVariants.some(dv=>dv===pDate||dv.replace(/\//g,'-')===pDate);
+            if(!matchData) continue;
+            const pNorm = normStr(p.paziente).split(' ').filter(w=>w.length>2);
+            if(pazWords.some(w=>pNorm.includes(w))){
+              isPortale=true;
+              impPortale=p.importo||impFattura;
+              detrazione=impPortale*DET;
+              break;
+            }
           }
 
-          // Verifica portale
-          var isPortale = matchPaziente(riga.paziente, riga.data, cog, S.idoctors);
-          var impFattPortale = 0;
-          var detrazione = 0;
-          if(isPortale){
-            var mp = S.idoctors.find(function(p){
-              if(p.cognome!==cog) return false;
-              if(normDate(p.data)!==normDate(riga.data)) return false;
-              var wR=normName(riga.paziente).split(' ').filter(function(w){return w.length>2;});
-              var wP=normName(p.paziente).split(' ').filter(function(w){return w.length>2;});
-              return wR.some(function(w){return wP.indexOf(w)>=0;});
-            });
-            impFattPortale = mp ? (parseFloat(mp.importo)||imp_fattura) : imp_fattura;
-            detrazione = impFattPortale * DET;
-          }
-
-          var compensoCorretto = compBase - detrazione;
-
-          // Confronto con XLS
-          var xlsComp = riga.imp;
-          var diffXLS = Math.abs(xlsComp - compensoCorretto);
-          var erroreXLS = diffXLS > 0.5;
+          const compensoCorretto = compBase - detrazione;
+          const errore = Math.abs(riga.imp - compensoCorretto) > 0.5;
 
           lordo += compBase;
           det += detrazione;
-          d.prestazioni++;
 
           righeCalcolate.push({
-            data: riga.data,
-            paziente: riga.paziente,
-            desc: riga.desc,
-            imp_fattura: imp_fattura,
-            compBase: compBase,
-            xlsComp: xlsComp,
-            isPortale: isPortale,
-            impFattPortale: impFattPortale,
-            detrazione: detrazione,
-            compensoCorretto: compensoCorretto,
-            erroreXLS: erroreXLS,
-            diffXLS: diffXLS,
-            xmlTrovato: !!xmlMatch
+            data:riga.data, paziente:riga.paziente, desc:riga.desc,
+            impFattura, compBase, xlsImp:riga.imp,
+            isPortale, impPortale, detrazione,
+            compensoCorretto, errore, xmlTrovato:!!xmlMatch
           });
         });
       });
 
-      d.dettaglio = righeCalcolate;
-
     } else {
-      // ── FALLBACK: solo XML aggregato ────────────────────────────────
-      var xmlMedico = [...S.rg,...S.zara].filter(function(f){return f.cognome===cog;});
-      xmlMedico.forEach(function(f){
-        d.fatturato+=f.fatturato; d.prestazioni+=f.prestazioni;
-        if(d.sedi.indexOf(f.sede)<0) d.sedi.push(f.sede);
+      // ── SOLO XML: calcolo aggregato ──
+      Object.values(S.xmlIndex).forEach(righe=>{
+        righe.filter(r=>r.cognomeMedico===cog).forEach(r=>{
+          const c=calcComp(q,r.imp,r.desc);
+          lordo+=c;
+          if(!sedi.includes(r.sede)) sedi.push(r.sede);
+        });
       });
-      lordo = q.fisso ? d.prestazioni*q.fisso : (q.pct ? d.fatturato*q.pct/100 : d.fatturato*0.70);
-      det = pp.reduce(function(s,p){return s+(p.imponibile||p.importo)*DET;},0);
+      det = ppList.reduce((s,p)=>(p.importo||0)*DET+s,0);
     }
 
-    var imponibile = lordo - det;
-    var ritenuta = imponibile * RIT;
-    var netto = imponibile - ritenuta;
-
-    // XLS check globale
-    var xlsCheck = null;
-    if(xlsData && righeCalcolate.length > 0){
-      var xlsLordo = xlsData.reduce(function(s,sede){return s+sede.subtotale;},0);
-      var nErr = righeCalcolate.filter(function(r){return r.erroreXLS;}).length;
-      var nNoXML = righeCalcolate.filter(function(r){return !r.xmlTrovato;}).length;
-      xlsCheck = {
-        xlsLordo: xlsLordo,
-        calcolatoLordo: imponibile,
-        diff: Math.abs(xlsLordo - imponibile),
-        ok: Math.abs(xlsLordo - imponibile) < 1.0,
-        nErr: nErr,
-        nNoXML: nNoXML
-      };
-    }
+    const imponibile=lordo-det;
+    const ritenuta=imponibile*RIT;
+    const netto=imponibile-ritenuta;
+    const xlsLordo=xlsData.reduce((s,d)=>s+d.subtotale,0);
+    const nErr=righeCalcolate.filter(r=>r.errore).length;
 
     S.risultati.push({
-      cog:cog, q:q, d:d, lordo:lordo, det:det,
-      n_portali:pp.length, imponibile:imponibile,
-      ritenuta:ritenuta, netto:netto, pp:pp,
-      righeCalcolate:righeCalcolate, xlsCheck:xlsCheck
+      cog, q, sedi, lordo, det, imponibile, ritenuta, netto,
+      righeCalcolate, xlsLordo, nErr,
+      fatturato:righeCalcolate.reduce((s,r)=>s+r.impFattura,0)||lordo/((q.pct||50)/100)
     });
   });
-  try {
-    renderVerifica(meseNome,a);
-    renderCorrispettivi(meseNome,a);
-    renderIncongruenze();
-  } catch(err) {
-    console.error('Errore elaborazione:', err);
-    showToast('Errore: '+err.message);
-  }
-  document.getElementById('sb-periodo').textContent=meseNome+' '+a;
-  nav(document.querySelectorAll('.nav-item')[1],'verifica');
+
+  document.getElementById('sb-per').textContent = meseNome+' '+a;
+  renderVerifica(meseNome, a);
+  renderCorrispettivi(meseNome, a);
+  renderQuote();
+
+  // Vai a verifica
+  const navBtn = document.querySelectorAll('.nb')[1];
+  goTo(navBtn, 'verifica');
+  toast('Elaborati '+S.risultati.length+' medici');
 }
 
-const fmt=n=>Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtK=n=>Math.round(n).toLocaleString('it-IT');
+// ── RENDER VERIFICA ────────────────────────────────────────
+function renderVerifica(mese, anno){
+  const totL=S.risultati.reduce((s,r)=>s+r.lordo,0);
+  const totD=S.risultati.reduce((s,r)=>s+r.det,0);
+  const totN=S.risultati.reduce((s,r)=>s+r.netto,0);
+  const totErr=S.risultati.filter(r=>r.nErr>0).length;
 
-function initials(s){const w=s.split(/\s+/);return w.length>1?w[0][0]+w[1][0]:s.slice(0,2)}
+  document.getElementById('kpi-area').innerHTML =
+    '<div class="kpi"><div class="kpi-label">Compensi lordi</div><div class="kpi-val">€'+fmtK(totL)+'</div></div>'+
+    '<div class="kpi a"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€'+fmtK(totD)+'</div></div>'+
+    '<div class="kpi '+(totErr>0?'r':'g')+'"><div class="kpi-label">'+(totErr>0?'⚠ '+totErr+' con errori':'✓ Tutti corretti')+'</div><div class="kpi-val">'+S.risultati.length+'</div></div>'+
+    '<div class="kpi g"><div class="kpi-label">Netto totale</div><div class="kpi-val">€'+fmtK(totN)+'</div></div>';
 
-function normName(s){
-  return String(s||'').toLowerCase().trim()
-    .replace(/dr\.?s?\.?\s*/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');
-}
+  let html='';
+  S.risultati.sort((a,b)=>b.lordo-a.lordo).forEach((r,i)=>{
+    const badgeXLS = r.xlsLordo>0
+      ? (Math.abs(r.xlsLordo-r.imponibile)<1?'<span class="badge b-ok">✓ XLS ok</span>':'<span class="badge b-warn">⚠ XLS diff €'+fmt(Math.abs(r.xlsLordo-r.imponibile))+'</span>')
+      : '';
+    const badgeErr = r.nErr>0 ? '<span class="badge b-err">⚠ '+r.nErr+' errori</span>' : '';
 
-function normDate(s){
-  // Converte "02/04/2026" o "02/04/2026 - 09:00" → "02/04/2026"
-  return String(s||'').trim().split(' ')[0].split('-')[0].trim();
-}
-
-function matchPaziente(nomePaz, dataRiga, cognomeMedico, portaleList){
-  // Cerca in portaleList (iDoctors/Davinci) se questa riga è da portale
-  var nNorm = normName(nomePaz);
-  var dNorm = normDate(dataRiga);
-  return portaleList.some(function(p){
-    if(p.cognome !== cognomeMedico) return false;
-    var pNorm = normName(p.paziente);
-    var pDate = normDate(p.data);
-    // Match data esatta + match parziale nome (almeno una parola in comune)
-    if(dNorm !== pDate) return false;
-    var wordsRiga = nNorm.split(' ').filter(function(w){return w.length>2;});
-    var wordsPort = pNorm.split(' ').filter(function(w){return w.length>2;});
-    return wordsRiga.some(function(w){ return wordsPort.indexOf(w) >= 0; });
-  });
-}
-
-function isTampone(desc){
-  const d = desc.toLowerCase();
-  return d.includes('tampone') || d.includes('pap test') || d.includes('pap-test') || d.includes('hpv');
-}
-
-function ginecologaInfo(r){
-  if(r.q.tipo!=='ginecologa' || !r.d.dettaglio) return '';
-  const nTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).length;
-  if(nTamp===0) return '';
-  const impTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).reduce((s,p)=>s+p.imp,0);
-  const impVisite = r.d.fatturato - impTamp;
-  return '<div class="alert a-info" style="margin-bottom:12px;font-size:12px">'
-    +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-    +'<div>Calcolo misto: visite €'+fmt(impVisite)+' × '+r.q.pct+'% = <strong>€'+fmt(impVisite*r.q.pct/100)+'</strong>'
-    +' + '+nTamp+' tamponi × €15 = <strong>€'+fmt(nTamp*15)+'</strong></div></div>';
-}
-
-function renderVerifica(mese,anno){
-  var tot_f=S.risultati.reduce(function(s,r){return s+r.d.fatturato;},0);
-  var tot_l=S.risultati.reduce(function(s,r){return s+r.lordo;},0);
-  var tot_d=S.risultati.reduce(function(s,r){return s+r.det;},0);
-  var tot_n=S.risultati.reduce(function(s,r){return s+r.netto;},0);
-  var tot_err=S.risultati.filter(function(r){
-    return r.righeCalcolate && r.righeCalcolate.some(function(p){return p.erroreXLS||p.isPortale&&p.detrazione>0;});
-  }).length;
-
-  document.getElementById('verifica-kpi').innerHTML=''
-    +'<div class="kpi blue"><div class="kpi-label">Fatturato XML</div><div class="kpi-val">€'+fmtK(tot_f)+'</div><div class="kpi-sub">'+S.risultati.length+' medici</div></div>'
-    +'<div class="kpi blue"><div class="kpi-label">Compensi lordi</div><div class="kpi-val">€'+fmtK(tot_l)+'</div></div>'
-    +'<div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€'+fmtK(tot_d)+'</div></div>'
-    +'<div class="kpi '+(tot_err>0?'red':'green')+'"><div class="kpi-label">'+(tot_err>0?'⚠ '+tot_err+' medici con errori':'✓ Tutti corretti')+'</div><div class="kpi-val">€'+fmtK(tot_n)+'</div><div class="kpi-sub">netto totale</div></div>';
-
-  var html='';
-  S.risultati.sort(function(a,b){return b.lordo-a.lordo;}).forEach(function(r,i){
-    var xlsBadge='';
-    if(r.xlsCheck){
-      xlsBadge = r.xlsCheck.ok
-        ? '<span class="badge b-green">✓ XLS ok</span>'
-        : '<span class="badge b-amber">⚠ XLS diff €'+fmt(r.xlsCheck.diff)+'</span>';
-    }
-    var nErr = r.righeCalcolate ? r.righeCalcolate.filter(function(p){return p.erroreXLS;}).length : 0;
-    html += '<div class="mc" id="mc-'+i+'">'
-      +'<div class="mc-head" onclick="toggleMC('+i+')">'
-      +'<div class="mc-left">'
-      +'<div class="mc-avatar">'+r.cog.slice(0,2)+'</div>'
-      +'<div>'
+    html += '<div class="mc" id="mc'+i+'">'
+      +'<div class="mc-head" onclick="toggle('+i+')">'
+      +'<div style="display:flex;align-items:center">'
+      +'<div class="mc-av">'+r.cog.slice(0,2)+'</div>'
+      +'<div class="mc-info">'
       +'<div class="mc-name">'+r.cog+'</div>'
-      +'<div class="mc-meta">'+r.d.prestazioni+' prest. · €'+fmtK(r.d.fatturato)+' fatturato · '+r.d.sedi.join('+')+'</div>'
+      +'<div class="mc-meta">'+r.righeCalcolate.length+' prest. · '+r.sedi.join('+')+'</div>'
       +'</div></div>'
-      +'<div class="mc-right">'
-      +(nErr>0?'<span class="badge b-amber">⚠ '+nErr+' errori</span>':xlsBadge)
-      +'<div class="mc-netto">€'+fmt(r.netto)+'</div>'
-      +'<div class="mc-chevron">▾</div>'
+      +'<div class="mc-right">'+badgeErr+badgeXLS+'<div class="mc-netto">€'+fmt(r.netto)+'</div><span style="color:var(--text3)">▾</span>'
       +'</div></div>'
-      +'<div class="mc-body" id="mcb-'+i+'">'
+      +'<div class="mc-body" id="mb'+i+'">'
       +'<div class="mc-amounts">'
-      +'<div class="ma"><div class="ma-label">Fatturato XML</div><div class="ma-val">€'+fmt(r.d.fatturato)+'</div></div>'
-      +'<div class="ma"><div class="ma-label">Compenso lordo</div><div class="ma-val td-blue">€'+fmt(r.lordo)+'</div></div>'
-      +'<div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">-€'+fmt(r.det)+'</div></div>'
-      +'<div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">-€'+fmt(r.ritenuta)+'</div></div>'
-      +'<div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€'+fmt(r.netto)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Fatturato XML</div><div class="ma-val">€'+fmt(r.fatturato)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Compenso lordo</div><div class="ma-val" style="color:var(--blue)">€'+fmt(r.lordo)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val" style="color:var(--amber)">-€'+fmt(r.det)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val" style="color:var(--red)">-€'+fmt(r.ritenuta)+'</div></div>'
+      +'<div class="ma"><div class="ma-label">Netto</div><div class="ma-val" style="color:var(--green)">€'+fmt(r.netto)+'</div></div>'
       +'</div>'
-      +renderRigheCalcolate(r)
+      +renderTabellaRighe(r)
       +'</div></div>';
   });
-  document.getElementById('verifica-list').innerHTML=html||'<div class="empty">Nessun risultato</div>';
+
+  document.getElementById('medici-list').innerHTML = html||'<div style="text-align:center;padding:40px;color:var(--text3)">Nessun risultato — carica i file e premi Elabora</div>';
 }
 
-function renderRigheCalcolate(r){
-  if(!r.righeCalcolate || r.righeCalcolate.length===0) return '';
-  var nErr=0;
-  var righe=r.righeCalcolate.map(function(p){
-    var rigaClass='riga-ok', badge='', compStr='';
-    var impShow=p.imp_fattura||0;
-    var compXLS=p.xlsComp||p.imp||0;
-    var compCalc=p.compensoCorretto!==undefined?p.compensoCorretto:(p.compBase||compXLS);
-    if(p.erroreXLS && p.xmlTrovato){
-      nErr++;
-      rigaClass='riga-err';
-      badge='<span class="badge-err-riga">⚠ diff €'+fmt(p.diffXLS)+'</span>';
-      compStr='<span style="text-decoration:line-through;color:var(--red)">€'+fmt(compXLS)+'</span> → <strong style="color:var(--green)">€'+fmt(compCalc)+'</strong>';
-    } else if(p.isPortale && p.detrazione>0){
-      nErr++;
-      rigaClass='riga-err';
-      badge='<span class="badge-err-riga">⚠ portale -€'+fmt(p.detrazione)+'</span>';
-      compStr='<span style="text-decoration:line-through;color:var(--red)">€'+fmt(compXLS)+'</span> → <strong style="color:var(--green)">€'+fmt(compCalc)+'</strong>';
+function renderTabellaRighe(r){
+  if(!r.righeCalcolate||r.righeCalcolate.length===0) return '';
+  const righe = r.righeCalcolate.map(p=>{
+    let cls='', badge='', compStr='€'+fmt(p.compensoCorretto);
+    if(p.errore&&p.xmlTrovato){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">⚠ diff €'+fmt(Math.abs(p.xlsImp-p.compensoCorretto))+'</span>';
+      compStr='<span style="text-decoration:line-through;color:var(--red);font-size:11px">€'+fmt(p.xlsImp)+'</span> → <strong style="color:var(--green)">€'+fmt(p.compensoCorretto)+'</strong>';
+    } else if(p.isPortale&&p.detrazione>0){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">portale -€'+fmt(p.detrazione)+'</span>';
     } else if(p.isPortale){
-      rigaClass='riga-fix';
-      badge='<span class="badge-ok-riga">✓ portale</span>';
-      compStr='€'+fmt(compCalc);
-    } else if(!p.xmlTrovato && impShow===0){
-      badge='<span class="badge-err-riga">⚠ no XML</span>';
-      compStr='€'+fmt(compXLS)+' (XLS)';
-    } else {
-      compStr='€'+fmt(compCalc);
+      cls='tr-ok';
+      badge='<span class="badge b-ok" style="margin-left:4px">✓ portale</span>';
+    } else if(!p.xmlTrovato&&p.impFattura===0){
+      badge='<span class="badge b-warn" style="margin-left:4px">no XML</span>';
     }
-    var impCell=impShow>0?'€'+fmt(impShow):'<span style="color:var(--text3)">-</span>';
-    return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+(p.desc||'')+'</td><td style="text-align:right">'+impCell+'</td><td style="text-align:right">€'+fmt(compXLS)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
+    const impCell=p.impFattura>0?'€'+fmt(p.impFattura):'<span style="color:var(--text3)">—</span>';
+    return '<tr class="'+cls+'"><td>'+p.data+'</td><td>'+p.paziente+badge+'</td><td>'+p.desc+'</td><td class="tr-r">'+impCell+'</td><td class="tr-r">€'+fmt(p.xlsImp)+'</td><td class="tr-r">'+compStr+'</td></tr>';
   }).join('');
-  var nOk=r.righeCalcolate.length-nErr;
-  var summary='<div class="verifica-summary">'
-    +(nErr>0?'<span class="vs-card vs-warn">⚠ '+nErr+' righe con errore</span>':'<span class="vs-card vs-ok">✓ Tutti corretti</span>')
-    +'<span class="vs-card vs-ok">'+nOk+' righe OK</span>'
-    +(r.xlsCheck&&!r.xlsCheck.ok?'<span class="vs-card vs-err">Totale XLS €'+fmt(r.xlsCheck.xlsLordo)+' vs calcolato €'+fmt(r.xlsCheck.calcolatoLordo)+'</span>':'')
-    +'</div>';
-  return summary+'<div class="tbl-wrap"><table class="cf-prest-table"><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp. fattura</th><th>Comp. XLS</th><th>Comp. corretto</th></tr></thead><tbody>'+righe+'</tbody></table></div>';
+
+  const nErr=r.righeCalcolate.filter(p=>p.errore||p.isPortale&&p.detrazione>0).length;
+  const sum=nErr>0
+    ?'<div class="alert a-warn" style="margin-bottom:8px">⚠ '+nErr+' righe con compenso da correggere</div>'
+    :'<div class="alert a-ok" style="margin-bottom:8px">✓ Tutti i compensi corretti</div>';
+
+  return sum+'<div class="tbl-wrap"><table>'
+    +'<thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp.fattura</th><th>Comp.XLS</th><th>Comp.corretto</th></tr></thead>'
+    +'<tbody>'+righe+'</tbody></table></div>';
 }
-function toggleMC(i){
-  const mc=document.getElementById('mc-'+i);
+
+function toggle(i){
+  const mc=document.getElementById('mc'+i);
   mc.classList.toggle('open');
 }
 
-function buildCorrispettivoHTML(r, mese, anno) {
-  const sedi = [...new Set(r.d.sedi)];
-  const hasDett = r.d.dettaglio && r.d.dettaglio.length > 0;
-  const sedeLabel = sedi.map(s=>'<span class="cf-sede-label">'+s+'</span>').join(' ');
-
-  // Nota ginecologhe
-  let notaGineco = '';
-  if(r.q.tipo==='ginecologa' && hasDett) {
-    const nTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).length;
-    const impTamp = r.d.dettaglio.filter(p=>isTampone(p.desc)).reduce((s,p)=>s+p.imp,0);
-    const impVisite = r.d.fatturato - impTamp;
-    if(nTamp>0) notaGineco = '<div class="cf-portali-note">Calcolo misto: visite €'+fmt(impVisite)+' x '+r.q.pct+'% = €'+fmt(impVisite*r.q.pct/100)+' + '+nTamp+' tra tamponi/pap test/HPV x €15 = €'+fmt(nTamp*15)+'</div>';
-  }
-
-  // Nota portali
-  let notaPortali = '';
-  if(r.n_portali>0) notaPortali = '<div class="cf-portali-note">Detrazione portali: '+r.n_portali+' prestazioni 6%+IVA sull\'imponibile = -€'+fmt(r.det)+'</div>';
-
-  // Tabella prestazioni
-  let tabellaHTML = '';
-  if(hasDett) {
-    var nErr = 0;
-    var righe = r.d.dettaglio.map(function(p) {
-      var badge = '', rigaClass = 'riga-ok', compStr = '';
-      var impShow = p.imp_fattura||p.imp||0;
-      var compShow = p.compBase||p.imp||0;
-      var compCorr = p.compensoCorretto!==undefined ? p.compensoCorretto : compShow;
-      if(p.isPortale && p.detrazione > 0){
-        nErr++;
-        rigaClass = 'riga-err';
-        badge = '<span class="badge-err-riga">⚠ portale -€'+fmt(p.detrazione)+'</span>';
-        compStr = '<span style="color:var(--red);text-decoration:line-through">€'+fmt(compShow)+'</span> → <strong style="color:var(--green)">€'+fmt(compCorr)+'</strong>';
-      } else if(p.isPortale){
-        rigaClass = 'riga-fix';
-        badge = '<span class="badge-ok-riga">✓ portale</span>';
-        compStr = '€'+fmt(compShow);
-      } else {
-        compStr = '€'+fmt(compShow);
-      }
-      return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+p.desc+'</td><td style="text-align:right">€'+fmt(impShow)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
-    }).join('');
-    var nOk = r.d.dettaglio.length - nErr;
-    var summaryHTML = '';
-    if(nErr > 0) summaryHTML = '<div class="verifica-summary"><span class="vs-card vs-warn">⚠ '+nErr+' righe con detrazione portale mancante</span><span class="vs-card vs-ok">'+nOk+' righe OK</span></div>';
-    else if(r.n_portali > 0) summaryHTML = '<div class="verifica-summary"><span class="vs-card vs-ok">✓ Tutti i compensi corretti ('+r.n_portali+' portali già detratti)</span></div>';
-    tabellaHTML = summaryHTML+'<table class="cf-prest-table"><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Comp. XLS</th><th>Comp. corretto</th></tr></thead><tbody>'+righe+'</tbody></table>';
-  } else {
-    tabellaHTML = '<div style="padding:12px 16px;font-size:12px;color:var(--text2)">'+r.d.prestazioni+' prestazioni · totale fatturato €'+fmt(r.d.fatturato)+'<br><span style="font-size:11px;color:var(--text3)">Carica gli XLS corrispettivi per il dettaglio riga per riga</span></div>';
-  }
-
-  const padMese = String(['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'].indexOf(mese)+1).padStart(2,'0');
-  const lastDay = new Date(parseInt(anno), parseInt(padMese), 0).getDate();
-
-  return '<div class="cf-doc" id="cf-'+r.cog+'">'
-    +'<div class="cf-doc-head"><div><div class="cf-doc-titolo">Report Compensi '+r.cog+'</div><div class="cf-doc-medico">'+r.q.note+'</div></div><div class="cf-doc-meta">'+mese+' '+anno+'<br>MedNow Medical Center Srl</div></div>'
-    +'<div class="cf-info-bar">'
-    +'<div class="cf-info-cell"><div class="cf-info-label">Ambulatorio</div><div class="cf-info-val">'+sedeLabel+'</div></div>'
-    +'<div class="cf-info-cell"><div class="cf-info-label">Periodo</div><div class="cf-info-val">01/'+padMese+'/'+anno+' – '+lastDay+'/'+padMese+'/'+anno+'</div></div>'
-    +'</div>'
-    +notaGineco+notaPortali+tabellaHTML
-    +'<div class="cf-totali">'
-    +'<div class="cf-tot-row"><span class="cf-tot-label">Totale imponibile</span><span class="cf-tot-val">€'+fmt(r.d.fatturato)+'</span></div>'
-    +'<div class="cf-tot-row"><span class="cf-tot-label">Compenso lordo ('+r.q.note+')</span><span class="cf-tot-val blue">€'+fmt(r.lordo)+'</span></div>'
-    +(r.n_portali>0?'<div class="cf-tot-row"><span class="cf-tot-label">Detrazione portali</span><span class="cf-tot-val" style="color:var(--amber)">-€'+fmt(r.det)+'</span></div>':'')
-    +'<div class="cf-tot-row"><span class="cf-tot-label">Totale imponibile netto</span><span class="cf-tot-val">€'+fmt(r.imponibile)+'</span></div>'
-    +'<div class="cf-tot-row main"><span class="cf-tot-label" style="font-weight:700">Ritenuta acconto 20%</span><span class="cf-tot-val red">-€'+fmt(r.ritenuta)+'</span></div>'
-    +'<div class="cf-tot-row"><span class="cf-tot-label" style="font-weight:700;font-size:14px">Totale netto</span><span class="cf-tot-val green">€'+fmt(r.netto)+'</span></div>'
-    +'</div>'
-    +'<div class="cf-footer">MedNow Medical Center Srl · Viale Zara 113A Milano · PEC mednow@legalmail.it · P.IVA 12120830968 · Cod. SDI KGVVJ2H</div>'
-    +'<div style="display:flex;gap:6px;padding:8px 16px;border-top:1px solid var(--border2);background:var(--surface2)">'
-    +'<button class="btn btn-sm btn-primary" onclick="stampaSingolo(\'"+r.cog+"\')">Stampa</button>'
-    +'<button class="btn btn-sm" onclick="copiaSingolo(\'"+r.cog+"\',"+r.lordo+","+r.det+","+r.ritenuta+","+r.netto+")">Copia</button>'
-    +'</div></div>';
-}
-
-function renderCorrispettivi(mese,anno){
-  if(!S.risultati.length){document.getElementById('corr-list').innerHTML=emptyState('Nessun dato','Carica i file e premi Elabora.');return;}
-  document.getElementById('corr-export-bar').style.display='flex';
-  document.getElementById('corr-list').innerHTML = S.risultati.map(function(r){return buildCorrispettivoHTML(r,mese,anno);}).join('');
-}
-
-function stampaSingolo(cog){
-  var el = document.getElementById('cf-'+cog);
-  if(!el){ showToast('Corrispettivo non trovato'); return; }
-  var css = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:13px;color:#1c2128;padding:20px}.cf-doc{border:1px solid #ccc;border-radius:8px;overflow:hidden}.cf-doc-head{background:#185FA5;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start}.cf-doc-titolo{font-size:15px;font-weight:700}.cf-doc-medico{font-size:12px;opacity:.8;margin-top:2px}.cf-doc-meta{text-align:right;font-size:11px;opacity:.85}.cf-info-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e0e0e0}.cf-info-cell{padding:10px 16px;font-size:12px;border-right:1px solid #e0e0e0}.cf-info-label{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px;font-weight:600}.cf-info-val{font-weight:500}.cf-portali-note{background:#faeeda;border-left:3px solid #c07a00;padding:6px 12px;font-size:11px;color:#854F0B}.cf-sede-label{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6f1fb;color:#185FA5;margin-right:4px}.verifica-summary{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap}.vs-card{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500}.vs-ok{background:#eaf3de;color:#3B6D11}.vs-warn{background:#faeeda;color:#854F0B}.riga-ok td{}.riga-err td{background:#fff8e6}.riga-fix td{background:#eaf3de}table{width:100%;border-collapse:collapse;font-size:12px}th{padding:7px 12px;background:#f6f8fa;text-align:left;border-bottom:1px solid #e0e0e0;font-size:10px;text-transform:uppercase;font-weight:600}td{padding:7px 12px;border-bottom:1px solid #f0f0f0}.cf-totali{padding:12px 16px;background:#f6f8fa;border-top:2px solid #e0e0e0}.cf-tot-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.cf-tot-row.main{border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px}.cf-footer{padding:8px 16px;font-size:10px;color:#888;border-top:1px solid #e0e0e0;line-height:1.6}button{display:none}';
-  var inner = el.innerHTML.replace(/<div style="display:flex[^>]*gap:6px[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*$/, '</div>');
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Corrispettivo '+cog+'</title><style>'+css+'</style></head><body><div class="cf-doc">'+inner+'</div></body></html>';
-  var blob = new Blob([html], {type:'text/html'});
-  var url = URL.createObjectURL(blob);
-  var w = window.open(url, '_blank');
-  if(w){ setTimeout(function(){ w.print(); URL.revokeObjectURL(url); }, 800); }
-  else { showToast('Permetti i popup per questo sito per stampare'); }
-}
-
-function copiaSingolo(cog,lordo,det,rit,netto){
-  var lines=["CORRISPETTIVO - "+cog,"","Compenso lordo: EUR "+fmt(lordo),"Detrazione portali: -EUR "+fmt(det),"Ritenuta 20%: -EUR "+fmt(rit),"Netto da corrispondere: EUR "+fmt(netto)];
-  navigator.clipboard.writeText(lines.join("\n"));
-  showToast("Copiato");
-}
-function stampaTutti(){window.print();}
-function copiaTutti(){
-  var t=S.risultati.map(function(r){return r.cog+": EUR "+fmt(r.netto)+" netto";}).join("\n");
-  navigator.clipboard.writeText(t);
-  showToast("Tutti copiati");
-}
-function copia(cog,lordo,det,rit,netto,periodo){copiaSingolo(cog,lordo,det,rit,netto);}
-
-function renderIncongruenze(){
-  const items=[];
+// ── RENDER CORRISPETTIVI ───────────────────────────────────
+function renderCorrispettivi(mese, anno){
+  let html='';
   S.risultati.forEach(r=>{
-    if(!DB[r.cog])items.push({t:'warn',title:r.cog,msg:'Quota non in anagrafica — applicato 70% di default. Verifica accordo.'});
-    if(r.n_portali>0&&r.d.fatturato===0)items.push({t:'err',title:r.cog,msg:`${r.n_portali} prenotazioni da portali ma nessuna fattura XML trovata.`});
+    const righeHTML=r.righeCalcolate.map(p=>{
+      const comp=p.compensoCorretto;
+      return '<tr><td>'+p.data+'</td><td>'+p.paziente+'</td><td>'+p.desc+'</td>'
+        +'<td style="text-align:right">€'+fmt(p.impFattura||0)+'</td>'
+        +'<td style="text-align:right">€'+fmt(comp)+'</td></tr>';
+    }).join('');
+
+    html += '<div class="doc" id="doc-'+r.cog+'">'
+      +'<div class="doc-head"><div><div class="doc-title">Report Compensi '+r.cog+'</div><div class="doc-sub">'+r.q.note+'</div></div><div class="doc-meta">'+mese+' '+anno+'<br>MedNow Medical Center Srl</div></div>'
+      +'<div class="doc-info"><div class="doc-cell"><div class="doc-lbl">Ambulatorio</div>'+r.sedi.join(' + ')+'</div><div class="doc-cell"><div class="doc-lbl">Periodo</div>01/'+String(MESI.indexOf(mese)).padStart(2,'0')+'/'+anno+'</div></div>'
+      +(r.righeCalcolate.length>0?'<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp.fattura</th><th>Compenso</th></tr></thead><tbody>'+righeHTML+'</tbody></table></div>':'')
+      +'<div class="doc-totali">'
+      +'<div class="tot-row"><span>Compenso lordo ('+r.q.note+')</span><span class="tot-val" style="color:var(--blue)">€'+fmt(r.lordo)+'</span></div>'
+      +(r.det>0?'<div class="tot-row"><span>Detrazione portali (6%+IVA 22%)</span><span class="tot-val" style="color:var(--amber)">-€'+fmt(r.det)+'</span></div>':'')
+      +'<div class="tot-row"><span>Totale imponibile</span><span class="tot-val">€'+fmt(r.imponibile)+'</span></div>'
+      +'<div class="tot-row main"><span style="font-weight:700">Ritenuta acconto 20%</span><span class="tot-val" style="color:var(--red)">-€'+fmt(r.ritenuta)+'</span></div>'
+      +'<div class="tot-row"><span style="font-weight:700;font-size:14px">Totale netto</span><span class="tot-val" style="color:var(--green);font-size:16px;font-weight:800">€'+fmt(r.netto)+'</span></div>'
+      +'</div>'
+      +'<div class="doc-footer">MedNow Medical Center Srl · Viale Zara 113A Milano · P.IVA 12120830968</div>'
+      +'<div class="doc-actions">'
+      +'<button class="btn btn-p btn-sm" onclick="stampa(\''+r.cog+'\')">Stampa</button>'
+      +'<button class="btn btn-sm" onclick="copia(\''+r.cog+'\','+r.lordo+','+r.det+','+r.ritenuta+','+r.netto+')">Copia</button>'
+      +'</div></div>';
   });
-  items.push({t:'warn',title:'ABRATE',msg:'3 fatture emesse a Zara ma anagrafica indica solo Regina Giovanna. Verificare errore di sede.'});
-  items.push({t:'warn',title:'PEDULLA',msg:'Nessun corrispettivo Zara trovato nel Drive per Q1 2026. Primo file disponibile da Aprile.'});
-
-  const icon_err='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-  const icon_warn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-
-  let html=items.map(it=>`
-    <div class="inc-item inc-${it.t}">
-      <div class="inc-icon">${it.t==='err'?icon_err:icon_warn}</div>
-      <div class="inc-body">
-        <div class="inc-title">${it.title}</div>
-        <div class="inc-msg">${it.msg}</div>
-      </div>
-    </div>`).join('');
-
-  document.getElementById('inc-list').innerHTML=html||'<div class="alert a-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div>Nessuna incongruenza rilevata.</div></div>';
+  document.getElementById('doc-list').innerHTML=html||'<div style="text-align:center;padding:40px;color:var(--text3)">Elabora prima i file</div>';
 }
 
-function emptyState(t,s){return`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H5a2 2 0 0 0-2 2"/><path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v3"/><path d="M18 14v4"/><path d="M18 22v.01"/></svg><div class="empty-title">${t}</div><div class="empty-sub">${s}</div></div>`;}
-
-// ── QUOTE EDITOR ENGINE ──────────────────────────────────────────
-let QE_DB = null; // working copy (from localStorage or DB default)
-const QE_KEY = 'mednow_quote_v1';
-
-function qeInit(){
-  const saved = localStorage.getItem(QE_KEY);
-  QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB));
-  // Sync runtime DB
-  Object.assign(DB, QE_DB);
-  qeRender();
+// ── STAMPA ─────────────────────────────────────────────────
+function stampa(cog){
+  const el=document.getElementById('doc-'+cog);
+  if(!el){toast('Doc non trovato');return;}
+  const css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:13px;padding:20px}.doc{border:1px solid #ccc;border-radius:8px;overflow:hidden}.doc-head{background:#185FA5;color:#fff;padding:12px 16px;display:flex;justify-content:space-between}.doc-title{font-size:15px;font-weight:700}.doc-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd}.doc-cell{padding:8px 14px;font-size:12px;border-right:1px solid #ddd}.doc-lbl{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px}.tbl-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:11px}th{padding:6px 10px;background:#f5f5f5;text-align:left;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase}td{padding:6px 10px;border-bottom:1px solid #eee}.doc-totali{padding:10px 14px;background:#f9f9f9;border-top:2px solid #ddd}.tot-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}.tot-row.main{border-top:1px solid #ddd;margin-top:4px;padding-top:6px}.doc-footer{padding:6px 14px;font-size:10px;color:#888}.doc-actions{display:none}button{display:none}';
+  const inner=el.innerHTML.replace(/<div class="doc-actions">[\s\S]*?<\/div>\s*<\/div>\s*$/,'</div>');
+  const w=window.open('','_blank','width=800,height=900');
+  if(!w){toast('Abilita popup per questo sito');return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Corrispettivo '+cog+'</title><style>'+css+'</style></head><body><div class="doc">'+inner+'</div></body></html>');
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print();},500);
 }
 
-function qeSave(){
-  localStorage.setItem(QE_KEY, JSON.stringify(QE_DB));
-  Object.assign(DB, QE_DB);
-  document.getElementById('qe-mod-badge').style.display='none';
-  showToast('✓ Quote salvate');
+function copia(cog,lordo,det,rit,netto){
+  const t=['CORRISPETTIVO - '+cog,'','Compenso lordo: EUR '+fmt(lordo),'Detrazione portali: -EUR '+fmt(det),'Ritenuta 20%: -EUR '+fmt(rit),'Netto: EUR '+fmt(netto)].join('\n');
+  navigator.clipboard.writeText(t).then(()=>toast('Copiato'));
 }
 
-function qeReset(){
-  if(!confirm('Ripristinare tutte le quote ai valori di default?')) return;
-  localStorage.removeItem(QE_KEY);
-  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
-  Object.assign(DB, QE_DB);
-  qeRender();
-  showToast('Quote ripristinate ai valori default');
+// ── QUOTE TABLE ────────────────────────────────────────────
+function renderQuote(){
+  const tb=document.getElementById('quote-tbody');
+  if(!tb) return;
+  tb.innerHTML=Object.entries(DB).map(([c,q])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>').join('');
 }
-
-function qeSalvaTutti(){
-  // Legge tutti i campi editati e salva
-  document.querySelectorAll('.qe-row').forEach(tr=>{
-    const cog = tr.dataset.cog;
-    const tipo = tr.querySelector('.qe-tipo-sel').value;
-    const val = parseFloat(tr.querySelector('.qe-val-inp').value)||0;
-    const note = tr.querySelector('.qe-note-inp').value.trim();
-    if(tipo==='pct'){
-      QE_DB[cog]={pct:val, note:note||val+'%'};
-    } else {
-      QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
-    }
-  });
-  qeSave();
-  qeRender();
-}
-
-function qeMarkModified(cog){
-  const tr = document.querySelector(`[data-cog="${cog}"]`);
-  if(tr) tr.classList.add('qe-modified');
-  document.getElementById('qe-mod-badge').style.display='inline-flex';
-}
-
-function qeSalvaSingolo(cog){
-  const tr = document.querySelector(`[data-cog="${cog}"]`);
-  const tipo = tr.querySelector('.qe-tipo-sel').value;
-  const val = parseFloat(tr.querySelector('.qe-val-inp').value)||0;
-  const note = tr.querySelector('.qe-note-inp').value.trim();
-  if(tipo==='pct'){
-    QE_DB[cog]={pct:val, note:note||val+'%'};
-  } else {
-    QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
-  }
-  qeSave();
-  tr.classList.remove('qe-modified');
-  showToast('✓ '+cog+' salvato');
-}
-
-function qeElimina(cog){
-  if(!confirm('Eliminare '+cog+" dall'anagrafica?")) return;
-  delete QE_DB[cog];
-  qeSave();
-  qeRender();
-}
-
-function qeAggiungi(){
-  const cog = document.getElementById('qe-new-cog').value.toUpperCase().trim();
-  const tipo = document.getElementById('qe-new-tipo').value;
-  const val = parseFloat(document.getElementById('qe-new-val').value)||0;
-  const note = document.getElementById('qe-new-note').value.trim();
-  if(!cog){showToast('Inserisci il cognome');return;}
-  if(!val){showToast('Inserisci un valore');return;}
-  if(QE_DB[cog]){showToast(cog+' esiste già — modifica dalla tabella');return;}
-  if(tipo==='pct'){
-    QE_DB[cog]={pct:val, note:note||val+'%'};
-  } else {
-    QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
-  }
-  qeSave();
-  // reset form
-  ['qe-new-cog','qe-new-val','qe-new-note'].forEach(id=>document.getElementById(id).value='');
-  qeRender();
-  showToast('✓ '+cog+' aggiunto');
-}
-
-function qeRender(){
-  const search = (document.getElementById('qe-search')||{value:''}).value.toLowerCase();
-  const tipoF = (document.getElementById('qe-tipo-filter')||{value:''}).value;
-  const tbody = document.getElementById('qe-tbody');
-  if(!tbody) return;
-  const entries = Object.entries(QE_DB)
-    .filter(([c,q])=> (!search || c.toLowerCase().includes(search)) &&
-                      (!tipoF || (tipoF==='pct'?q.pct:!q.pct)))
-    .sort((a,b)=>a[0].localeCompare(b[0]));
-  document.getElementById('qe-count').textContent = entries.length+' medici';
-  tbody.innerHTML = entries.map(([cog,q])=>{
-    const isPct = !!q.pct;
-    const val = isPct ? q.pct : (q.fisso||0);
-    return `<tr class="qe-row" data-cog="${cog}">
-      <td class="qe-cognome">${cog}</td>
-      <td>
-        <select class="qe-tipo-sel" onchange="qeMarkModified('${cog}')">
-          <option value="pct" ${isPct?'selected':''}>% Percentuale</option>
-          <option value="fisso" ${!isPct?'selected':''}>€ Importo fisso</option>
-        </select>
-      </td>
-      <td>
-        <input type="number" class="qe-input qe-val-inp" value="${val}" min="0" step="0.5" oninput="qeMarkModified('${cog}')">
-      </td>
-      <td>
-        <input type="text" class="qe-note qe-note-inp" value="${q.note||''}" oninput="qeMarkModified('${cog}')">
-      </td>
-      <td style="white-space:nowrap">
-        <button class="qe-save-btn" onclick="qeSalvaSingolo('${cog}')">Salva</button>
-        <button class="qe-del-btn" onclick="qeElimina('${cog}')">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function qeFilter(){ qeRender(); }
-
-function showToast(msg){
-  let t = document.getElementById('toast-el');
-  if(!t){t=document.createElement('div');t.id='toast-el';t.className='toast';document.body.appendChild(t);}
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),2200);
-}
-
-// Init al caricamento pagina
-const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
-document.addEventListener('DOMContentLoaded', function(){
-  qeInit();
-});
+renderQuote();
 </script>
 </body>
 </html>
