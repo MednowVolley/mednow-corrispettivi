@@ -176,6 +176,40 @@ input[type=file]{display:none}
 .step.active{background:var(--blue);color:#fff}
 .step.done{background:var(--green-dim);color:var(--green)}
 
+
+/* ── QUOTE EDITOR ── */
+.qe-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.qe-search{flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
+.qe-search:focus{border-color:var(--blue)}
+.qe-filter{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;cursor:pointer}
+.qe-count{font-size:12px;color:var(--text3);margin-left:auto}
+.qe-table-wrap{border:1px solid var(--border2);border-radius:9px;overflow:hidden}
+.qe-table{width:100%;border-collapse:collapse;font-size:13px}
+.qe-table th{padding:9px 12px;background:var(--surface2);color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--border2)}
+.qe-table td{padding:7px 10px;border-bottom:1px solid var(--border2);vertical-align:middle}
+.qe-table tr:last-child td{border-bottom:none}
+.qe-table tr:hover td{background:var(--surface2)}
+.qe-cognome{font-weight:600;font-size:13px;color:var(--text)}
+.qe-tipo{display:inline-flex;align-items:center;gap:4px}
+.qe-tipo select{padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface);color:var(--text);cursor:pointer;font-family:var(--font)}
+.qe-input{width:70px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right;font-family:var(--mono);background:var(--surface);color:var(--text)}
+.qe-input:focus{border-color:var(--blue);outline:none}
+.qe-note{width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface);color:var(--text);font-family:var(--font)}
+.qe-note:focus{border-color:var(--blue);outline:none}
+.qe-save-btn{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--green);background:var(--green-dim);color:var(--green);font-family:var(--font);transition:all .12s}
+.qe-save-btn:hover{background:var(--green);color:#fff}
+.qe-del-btn{padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-family:var(--font);transition:all .12s}
+.qe-del-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+.qe-add-card{background:var(--surface);border:1.5px dashed var(--border);border-radius:9px;padding:14px 16px;margin-top:12px}
+.qe-add-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.qe-add-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}
+.qe-add-grid label{display:block;font-size:11px;color:var(--text3);margin-bottom:3px}
+.qe-add-grid input,.qe-add-grid select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);font-family:var(--font)}
+.qe-modified{background:rgba(24,95,165,.05)!important}
+.qe-modified td{border-left:2px solid var(--blue)!important}
+.toast{position:fixed;bottom:20px;right:20px;background:#1c2128;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;display:flex;align-items:center;gap:8px}
+.toast.show{opacity:1}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -347,36 +381,90 @@ input[type=file]{display:none}
 
     <!-- QUOTE -->
     <div id="page-quote" class="page">
-      <div class="card">
+      <div class="card" style="margin-bottom:12px">
         <div class="card-head">
           <div class="card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Detrazione portali esterni
+            Portali esterni — regola detrazione
           </div>
         </div>
-        <div class="alert a-warn" style="margin-bottom:14px">
+        <div class="alert a-warn" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div>Per ogni prenotazione da <strong>iDoctors, Davinci, Doctolib, CupSolidale</strong>: si calcola <strong>6% + IVA 22% = 7,32% sull'imponibile della fattura</strong> (totale − bollo), e si sottrae dal compenso medico lordo</div>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Portale</th><th>Detrazione</th><th>IVA 22%</th><th>Totale sul compenso</th><th>Esempio su €100</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge b-blue">iDoctors</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
-              <tr><td><span class="badge b-blue">Davinci / Elty</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
-              <tr><td><span class="badge b-blue">Doctolib</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
-              <tr><td><span class="badge b-blue">CupSolidale</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
-            </tbody>
-          </table>
+          <div><strong>iDoctors, Davinci, Doctolib, CupSolidale:</strong> 6% + IVA 22% = <strong>7,32%</strong> sull'imponibile fattura (escluso bollo) → sottratto dal compenso lordo del medico</div>
         </div>
       </div>
+
       <div class="card">
-        <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Quote medici</div></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Medico</th><th>Accordo</th><th>Tipo</th></tr></thead>
-            <tbody id="quote-tbody"></tbody>
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Quote medici
+            <span id="qe-mod-badge" style="display:none" class="badge b-blue">modifiche non salvate</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="qeSalvaTutti()" title="Salva tutte le modifiche">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
+              Salva tutto
+            </button>
+            <button class="btn btn-sm" onclick="qeReset()" title="Ripristina valori di default">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.33"/></svg>
+              Reset default
+            </button>
+          </div>
+        </div>
+
+        <div class="qe-toolbar">
+          <input type="text" class="qe-search" id="qe-search" placeholder="🔍  Cerca medico..." oninput="qeFilter()">
+          <select class="qe-filter" id="qe-tipo-filter" onchange="qeFilter()">
+            <option value="">Tutti i tipi</option>
+            <option value="pct">Percentuale</option>
+            <option value="fisso">Importo fisso</option>
+          </select>
+          <span class="qe-count" id="qe-count"></span>
+        </div>
+
+        <div class="qe-table-wrap">
+          <table class="qe-table">
+            <thead>
+              <tr>
+                <th style="width:130px">Cognome</th>
+                <th style="width:110px">Tipo quota</th>
+                <th style="width:90px">Valore</th>
+                <th>Note / accordo</th>
+                <th style="width:100px">Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="qe-tbody"></tbody>
           </table>
+        </div>
+
+        <div class="qe-add-card">
+          <div class="qe-add-title">+ Aggiungi medico</div>
+          <div class="qe-add-grid">
+            <div>
+              <label>Cognome</label>
+              <input type="text" id="qe-new-cog" placeholder="es. ROSSI" style="text-transform:uppercase">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="qe-new-tipo">
+                <option value="pct">Percentuale (%)</option>
+                <option value="fisso">Importo fisso (€)</option>
+              </select>
+            </div>
+            <div>
+              <label>Valore</label>
+              <input type="number" id="qe-new-val" placeholder="es. 70" min="0" max="100" step="0.5">
+            </div>
+            <div>
+              <label>Note</label>
+              <input type="text" id="qe-new-note" placeholder="es. 70/30">
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button class="btn btn-primary btn-sm" onclick="qeAggiungi()">Aggiungi</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -703,17 +791,148 @@ function renderIncongruenze(){
 
 function emptyState(t,s){return`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H5a2 2 0 0 0-2 2"/><path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v3"/><path d="M18 14v4"/><path d="M18 22v.01"/></svg><div class="empty-title">${t}</div><div class="empty-sub">${s}</div></div>`;}
 
-// Quote table
-(function(){
-  const tb=document.getElementById('quote-tbody');
-  if(!tb)return;
-  tb.innerHTML=Object.entries(DB).map(([c,q])=>`
-    <tr>
-      <td style="font-weight:600">${c}</td>
-      <td>${q.note}</td>
-      <td><span class="badge ${q.pct?'b-blue':'b-gray'}">${q.pct?'%':'Fisso'}</span></td>
-    </tr>`).join('');
-})();
+// ── QUOTE EDITOR ENGINE ──────────────────────────────────────────
+let QE_DB = null; // working copy (from localStorage or DB default)
+const QE_KEY = 'mednow_quote_v1';
+
+function qeInit(){
+  const saved = localStorage.getItem(QE_KEY);
+  QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB));
+  // Sync runtime DB
+  Object.assign(DB, QE_DB);
+  qeRender();
+}
+
+function qeSave(){
+  localStorage.setItem(QE_KEY, JSON.stringify(QE_DB));
+  Object.assign(DB, QE_DB);
+  document.getElementById('qe-mod-badge').style.display='none';
+  showToast('✓ Quote salvate');
+}
+
+function qeReset(){
+  if(!confirm('Ripristinare tutte le quote ai valori di default?')) return;
+  localStorage.removeItem(QE_KEY);
+  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
+  Object.assign(DB, QE_DB);
+  qeRender();
+  showToast('Quote ripristinate ai valori default');
+}
+
+function qeSalvaTutti(){
+  // Legge tutti i campi editati e salva
+  document.querySelectorAll('.qe-row').forEach(tr=>{
+    const cog = tr.dataset.cog;
+    const tipo = tr.querySelector('.qe-tipo-sel').value;
+    const val = parseFloat(tr.querySelector('.qe-val-inp').value)||0;
+    const note = tr.querySelector('.qe-note-inp').value.trim();
+    if(tipo==='pct'){
+      QE_DB[cog]={pct:val, note:note||val+'%'};
+    } else {
+      QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
+    }
+  });
+  qeSave();
+  qeRender();
+}
+
+function qeMarkModified(cog){
+  const tr = document.querySelector(`[data-cog="${cog}"]`);
+  if(tr) tr.classList.add('qe-modified');
+  document.getElementById('qe-mod-badge').style.display='inline-flex';
+}
+
+function qeSalvaSingolo(cog){
+  const tr = document.querySelector(`[data-cog="${cog}"]`);
+  const tipo = tr.querySelector('.qe-tipo-sel').value;
+  const val = parseFloat(tr.querySelector('.qe-val-inp').value)||0;
+  const note = tr.querySelector('.qe-note-inp').value.trim();
+  if(tipo==='pct'){
+    QE_DB[cog]={pct:val, note:note||val+'%'};
+  } else {
+    QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
+  }
+  qeSave();
+  tr.classList.remove('qe-modified');
+  showToast('✓ '+cog+' salvato');
+}
+
+function qeElimina(cog){
+  if(!confirm('Eliminare '+cog+' dall'anagrafica?')) return;
+  delete QE_DB[cog];
+  qeSave();
+  qeRender();
+}
+
+function qeAggiungi(){
+  const cog = document.getElementById('qe-new-cog').value.toUpperCase().trim();
+  const tipo = document.getElementById('qe-new-tipo').value;
+  const val = parseFloat(document.getElementById('qe-new-val').value)||0;
+  const note = document.getElementById('qe-new-note').value.trim();
+  if(!cog){showToast('Inserisci il cognome');return;}
+  if(!val){showToast('Inserisci un valore');return;}
+  if(QE_DB[cog]){showToast(cog+' esiste già — modifica dalla tabella');return;}
+  if(tipo==='pct'){
+    QE_DB[cog]={pct:val, note:note||val+'%'};
+  } else {
+    QE_DB[cog]={pct:null, fisso:val, note:note||'€'+val+' fisso'};
+  }
+  qeSave();
+  // reset form
+  ['qe-new-cog','qe-new-val','qe-new-note'].forEach(id=>document.getElementById(id).value='');
+  qeRender();
+  showToast('✓ '+cog+' aggiunto');
+}
+
+function qeRender(){
+  const search = (document.getElementById('qe-search')||{value:''}).value.toLowerCase();
+  const tipoF = (document.getElementById('qe-tipo-filter')||{value:''}).value;
+  const tbody = document.getElementById('qe-tbody');
+  if(!tbody) return;
+  const entries = Object.entries(QE_DB)
+    .filter(([c,q])=> (!search || c.toLowerCase().includes(search)) &&
+                      (!tipoF || (tipoF==='pct'?q.pct:!q.pct)))
+    .sort((a,b)=>a[0].localeCompare(b[0]));
+  document.getElementById('qe-count').textContent = entries.length+' medici';
+  tbody.innerHTML = entries.map(([cog,q])=>{
+    const isPct = !!q.pct;
+    const val = isPct ? q.pct : (q.fisso||0);
+    return `<tr class="qe-row" data-cog="${cog}">
+      <td class="qe-cognome">${cog}</td>
+      <td>
+        <select class="qe-tipo-sel" onchange="qeMarkModified('${cog}')">
+          <option value="pct" ${isPct?'selected':''}>% Percentuale</option>
+          <option value="fisso" ${!isPct?'selected':''}>€ Importo fisso</option>
+        </select>
+      </td>
+      <td>
+        <input type="number" class="qe-input qe-val-inp" value="${val}" min="0" step="0.5" oninput="qeMarkModified('${cog}')">
+      </td>
+      <td>
+        <input type="text" class="qe-note qe-note-inp" value="${q.note||''}" oninput="qeMarkModified('${cog}')">
+      </td>
+      <td style="white-space:nowrap">
+        <button class="qe-save-btn" onclick="qeSalvaSingolo('${cog}')">Salva</button>
+        <button class="qe-del-btn" onclick="qeElimina('${cog}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function qeFilter(){ qeRender(); }
+
+function showToast(msg){
+  let t = document.getElementById('toast-el');
+  if(!t){t=document.createElement('div');t.id='toast-el';t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// Salvo una copia default immutabile prima che QE la sovrascriva
+const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
+
+// Init al caricamento
+qeInit();
 </script>
 </body>
 </html>
