@@ -709,6 +709,18 @@ const fmtK=n=>Math.round(n).toLocaleString('it-IT');
 
 function initials(s){const w=s.split(/\s+/);return w.length>1?w[0][0]+w[1][0]:s.slice(0,2)}
 
+function ginecologaInfo(r){
+  if(r.q.tipo!=='ginecologa' || !r.d.dettaglio) return '';
+  const nTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).length;
+  if(nTamp===0) return '';
+  const impTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).reduce((s,p)=>s+p.imp,0);
+  const impVisite = r.d.fatturato - impTamp;
+  return '<div class="alert a-info" style="margin-bottom:12px;font-size:12px">'
+    +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    +'<div>Calcolo misto: visite €'+fmt(impVisite)+' × '+r.q.pct+'% = <strong>€'+fmt(impVisite*r.q.pct/100)+'</strong>'
+    +' + '+nTamp+' tamponi × €15 = <strong>€'+fmt(nTamp*15)+'</strong></div></div>';
+}
+
 function renderVerifica(mese,anno){
   const tot_f=S.risultati.reduce((s,r)=>s+r.d.fatturato,0);
   const tot_l=S.risultati.reduce((s,r)=>s+r.lordo,0);
@@ -747,15 +759,7 @@ function renderVerifica(mese,anno){
           <div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">−€${fmt(r.ritenuta)}</div></div>
           <div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
         </div>
-        ${r.q.tipo==='ginecologa' && r.d.dettaglio ? (()=>{
-          const nTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).length;
-          const impTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).reduce((s,p)=>s+p.imp,0);
-          const impVisite = r.d.fatturato - impTamp;
-          return nTamp>0 ? \`<div class="alert a-info" style="margin-bottom:12px;font-size:12px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <div>Calcolo misto: visite €\${fmt(impVisite)} × \${r.q.pct}% = <strong>€\${fmt(impVisite*r.q.pct/100)}</strong> + \${nTamp} tamponi × €15 = <strong>€\${fmt(nTamp*15)}</strong></div>
-          </div>\` : '';
-        })() : ''}
+        ${ginecologaInfo(r)}
         ${r.n_portali>0?`
         <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
         <div class="tbl-wrap"><table>
