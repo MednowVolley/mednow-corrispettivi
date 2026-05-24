@@ -216,6 +216,39 @@ input[type=file]{display:none}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 
+
+/* ── CORRISPETTIVO FORMALE ── */
+.cf-wrap{max-width:700px;margin:0 auto}
+.cf-doc{background:#fff;border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
+.cf-doc-head{background:var(--blue);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+.cf-doc-titolo{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.cf-doc-medico{font-size:12px;opacity:.8;margin-top:2px}
+.cf-doc-meta{text-align:right;font-size:11px;opacity:.85;line-height:1.6}
+.cf-doc-body{padding:0}
+.cf-info-bar{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--border2)}
+.cf-info-cell{padding:10px 16px;font-size:12px;color:var(--text2)}
+.cf-info-cell:first-child{border-right:1px solid var(--border2)}
+.cf-info-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:2px;font-weight:600}
+.cf-info-val{font-weight:500;color:var(--text)}
+.cf-prest-table{width:100%;border-collapse:collapse;font-size:12px}
+.cf-prest-table th{padding:7px 16px;background:var(--surface2);color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--border2)}
+.cf-prest-table th:last-child{text-align:right}
+.cf-prest-table td{padding:7px 16px;border-bottom:1px solid var(--border2);color:var(--text)}
+.cf-prest-table td:last-child{text-align:right;font-family:var(--mono);font-size:11px}
+.cf-prest-table tr:last-child td{border-bottom:none}
+.cf-totali{border-top:1.5px solid var(--border);padding:12px 16px;background:var(--surface2)}
+.cf-tot-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.cf-tot-row.main{border-top:1.5px solid var(--border);margin-top:6px;padding-top:10px}
+.cf-tot-label{color:var(--text2)}
+.cf-tot-val{font-family:var(--mono);font-weight:500}
+.cf-tot-val.green{color:var(--green);font-weight:700;font-size:16px}
+.cf-tot-val.red{color:var(--red)}
+.cf-tot-val.blue{color:var(--blue)}
+.cf-footer{padding:10px 16px;font-size:10px;color:var(--text3);border-top:1px solid var(--border2);line-height:1.6}
+.cf-portali-note{background:var(--amber-dim);border-left:3px solid var(--amber);padding:6px 12px;font-size:11px;color:var(--amber);margin:0 0 0 0}
+.cf-export-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.cf-sede-label{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--blue-dim);color:var(--blue);margin-bottom:8px}
+
 /* ── EMPTY ── */
 .empty{text-align:center;padding:48px 24px;color:var(--text3)}
 .empty svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
@@ -371,7 +404,17 @@ input[type=file]{display:none}
 
     <!-- CORRISPETTIVI -->
     <div id="page-corrispettivi" class="page">
-      <div id="corr-list"></div>
+      <div class="cf-export-bar" id="corr-export-bar" style="display:none">
+        <button class="btn btn-primary" onclick="stampaTutti()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Stampa tutti
+        </button>
+        <button class="btn" onclick="copiaTutti()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copia tutti (testo)
+        </button>
+      </div>
+      <div class="cf-wrap" id="corr-list"></div>
     </div>
 
     <!-- INCONGRUENZE -->
@@ -602,7 +645,16 @@ function demo(){
     {cognome:'MEAZZA',prestazioni:48,fatturato:6840,sede:'RG'},
     {cognome:'GOBITTO',prestazioni:44,fatturato:3080,sede:'RG'},
     {cognome:'NICORA',prestazioni:27,fatturato:3500,sede:'RG'},
-    {cognome:'ABRATE',prestazioni:44,fatturato:3080,sede:'RG'},
+    {cognome:'ABRATE',prestazioni:23,fatturato:805,sede:'RG',dettaglio:[
+      {data:'02/04/2026',paziente:'BESTETTI LAURA',desc:'Trattamento Podologico',imp:35},
+      {data:'02/04/2026',paziente:'CECCONI MAURIZIO',desc:'Trattamento Podologico',imp:35},
+      {data:'02/04/2026',paziente:'BUSACCA ALBERTO',desc:'Trattamento Podologico',imp:35},
+      {data:'09/04/2026',paziente:'BERNASCONI FILIPPO',desc:'Trattamento Podologico',imp:35},
+      {data:'09/04/2026',paziente:'FERMO BEATRICE',desc:'Trattamento Podologico',imp:35},
+      {data:'23/04/2026',paziente:'YILMAZ MINA',desc:'Trattamento Podologico',imp:35},
+      {data:'23/04/2026',paziente:'INTINI ANGELICA',desc:'Trattamento Podologico',imp:35},
+      {data:'30/04/2026',paziente:'SLAVIERO STEFANO',desc:'Trattamento Podologico',imp:35},
+    ]},
     {cognome:'CAZZANIGA',prestazioni:7,fatturato:900,sede:'RG'},
     {cognome:'MONESTIER',prestazioni:47,fatturato:6110,sede:'RG'},
     {cognome:'LENTI',prestazioni:14,fatturato:1820,sede:'RG'},
