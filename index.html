@@ -925,142 +925,177 @@ function elabora(){
   const meseNome=MESI[m];
   S.risultati=[];
 
-  // ── FONTE PRIMARIA: fatture XML ──────────────────────────────────────
-  // Estrai tutte le prestazioni dalle fatture XML raggruppate per medico
-  // Le fatture XML sono la fonte della verità per il calcolo
-  var xmlPerMedico = {}; // cognome → [{paziente, data, desc, imp_fattura}]
-
-  function estraiCognomeXML(desc){
-    // "PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE" → "MONESTIER"
-    var d = String(desc||'').toUpperCase();
-    var parts = d.split(/[-–]/);
-    if(parts.length > 1){
-      var nomeCompleto = parts[parts.length-1].trim();
-      return nomeCompleto.split(/\s+/)[0];
-    }
-    // Cerca nel DB
-    var found = Object.keys(DB).find(function(k){ return d.includes(k); });
-    return found || '';
-  }
+  // ── STEP 1: costruisci indice XML ──────────────────────────────────────
+  // Chiave: normName(paziente) + '|' + normDate(data)
+  // Valore: {imp_fattura, desc, paziente, data, sede}
+  var xmlIndex = {}; // paziente|data → [fatture]
 
   [...S.rg,...S.zara].forEach(function(f){
-    if(!f.righeXML) return; // solo se abbiamo il dettaglio XML
+    if(!f.righeXML) return;
     f.righeXML.forEach(function(riga){
-      var cog = riga.cognomeMedico;
-      if(!cog) return;
-      if(!xmlPerMedico[cog]) xmlPerMedico[cog] = {righe:[], sedi:[]};
-      xmlPerMedico[cog].righe.push(riga);
-      if(xmlPerMedico[cog].sedi.indexOf(f.sede)<0) xmlPerMedico[cog].sedi.push(f.sede);
+      var key = normName(riga.paziente)+'|'+normDate(riga.data);
+      if(!xmlIndex[key]) xmlIndex[key] = [];
+      xmlIndex[key].push(riga);
     });
   });
 
-  // Se non abbiamo righeXML dettagliate, usa il dato aggregato per sede
-  // (compatibilità con caricamento ZIP senza parsing dettagliato)
-  var usaAggregato = Object.keys(xmlPerMedico).length === 0;
+  var hasXML = Object.keys(xmlIndex).length > 0;
 
-  if(usaAggregato){
-    // Fallback: usa fatturato aggregato per sede (vecchio comportamento)
-    var mapAgg = {};
-    [...S.rg,...S.zara].forEach(function(f){
-      if(!mapAgg[f.cognome]) mapAgg[f.cognome]={fatturato:0,prestazioni:0,sedi:[]};
-      mapAgg[f.cognome].fatturato += f.fatturato;
-      mapAgg[f.cognome].prestazioni += f.prestazioni;
-      if(mapAgg[f.cognome].sedi.indexOf(f.sede)<0) mapAgg[f.cognome].sedi.push(f.sede);
-    });
+  // ── STEP 2: per ogni medico con XLS caricato ───────────────────────────
+  var cogSet = {};
+  Object.keys(S.xls_corr).forEach(function(cog){ cogSet[cog]=true; });
+  // Aggiungi medici da XML se non hanno XLS
+  [...S.rg,...S.zara].forEach(function(f){ if(!cogSet[f.cognome]) cogSet[f.cognome]=true; });
 
-    Object.keys(mapAgg).forEach(function(cog){
-      var d = mapAgg[cog];
-      var q = DB[cog] || {pct:70, note:'70% (default)'};
-      var pp = S.portali[cog]||[];
-      var lordo = q.fisso ? d.prestazioni*q.fisso : (q.pct ? d.fatturato*q.pct/100 : d.fatturato*0.70);
-      var det = pp.reduce(function(s,p){return s+(p.imponibile||p.importo)*DET;},0);
-      var imponibile = lordo-det;
-      var ritenuta = imponibile*RIT;
-      var netto = imponibile-ritenuta;
-      S.risultati.push({cog:cog,q:q,d:d,lordo:lordo,det:det,n_portali:pp.length,imponibile:imponibile,ritenuta:ritenuta,netto:netto,pp:pp,xls:null});
-    });
-  } else {
-    // ── CALCOLO DA XML DETTAGLIATO ──────────────────────────────────────
-    Object.keys(xmlPerMedico).forEach(function(cog){
-      var xmlM = xmlPerMedico[cog];
-      var q = DB[cog] || {pct:70, note:'70% (default)'};
-      var pp = S.portali[cog]||[];
+  Object.keys(cogSet).forEach(function(cog){
+    var q = DB[cog] || {pct:50, note:'50% (default)'};
+    var xlsData = S.xls_corr[cog];
+    var pp = S.portali[cog]||[];
+    var d = {fatturato:0, prestazioni:0, sedi:[], dettaglio:null};
+    var righeCalcolate = [];
+    var lordo = 0;
+    var det = 0;
 
-      // Calcola compenso riga per riga dall'XML
-      var righeCalcolate = xmlM.righe.map(function(riga){
-        var imp = riga.imp_fattura; // imponibile fattura (senza bollo)
+    if(xlsData && xlsData.length > 0){
+      // ── MODALITA' PRINCIPALE: XLS + match XML ───────────────────────
+      xlsData.forEach(function(sede){
+        if(d.sedi.indexOf(sede.sede)<0) d.sedi.push(sede.sede);
 
-        // Compenso base dalla quota
-        var compBase = 0;
-        if(q.tipo==='ginecologa' && isTampone(riga.desc)){
-          compBase = q.fisso_tampone || 15;
-        } else if(q.fisso){
-          compBase = q.fisso;
-        } else if(q.pct){
-          compBase = imp * q.pct/100;
-        } else {
-          compBase = imp * 0.70;
-        }
+        sede.righe.forEach(function(riga){
+          // Cerca la fattura XML corrispondente (paziente + data)
+          var key = normName(riga.paziente)+'|'+normDate(riga.data);
 
-        // Verifica se questa visita è da portale
-        var isPortale = matchPaziente(riga.paziente, riga.data, cog, S.idoctors);
-        var impFattura = imp;
-        var detrazione = 0;
-        if(isPortale){
-          var mp = S.idoctors.find(function(p){
-            if(p.cognome!==cog) return false;
-            if(normDate(p.data)!==normDate(riga.data)) return false;
-            var wR=normName(riga.paziente).split(' ').filter(function(w){return w.length>2;});
-            var wP=normName(p.paziente).split(' ').filter(function(w){return w.length>2;});
-            return wR.some(function(w){return wP.indexOf(w)>=0;});
+          // Match esatto
+          var xmlRighe = xmlIndex[key];
+          var xmlMatch = null;
+
+          if(xmlRighe && xmlRighe.length > 0){
+            // Se c'è una sola fattura per quel paziente+data → match diretto
+            if(xmlRighe.length === 1){
+              xmlMatch = xmlRighe[0];
+            } else {
+              // Più fatture stesso giorno stesso paziente → prendi quella più vicina per importo
+              // o quella senza nome medico (da assegnare)
+              xmlMatch = xmlRighe.find(function(x){
+                return !x.cognomeMedico || x.cognomeMedico === cog;
+              }) || xmlRighe[0];
+            }
+          } else {
+            // Prova match parziale (solo prima parola cognome)
+            var primaParola = normName(riga.paziente).split(' ')[0];
+            var dataRiga = normDate(riga.data);
+            var found = null;
+            Object.keys(xmlIndex).forEach(function(k){
+              if(found) return;
+              var parts = k.split('|');
+              if(parts[1]===dataRiga && parts[0].indexOf(primaParola)>=0){
+                found = xmlIndex[k][0];
+              }
+            });
+            xmlMatch = found;
+          }
+
+          var imp_fattura = xmlMatch ? xmlMatch.imp_fattura : 0;
+          d.fatturato += imp_fattura;
+
+          // Calcolo compenso dalla quota sul fatturato XML
+          var compBase = 0;
+          if(q.tipo==='ginecologa' && isTampone(riga.desc)){
+            compBase = q.fisso_tampone||15;
+          } else if(q.fisso){
+            compBase = q.fisso;
+          } else if(q.pct && imp_fattura > 0){
+            compBase = imp_fattura * q.pct/100;
+          } else {
+            // Fallback: usa importo XLS come compenso
+            compBase = riga.imp;
+          }
+
+          // Verifica portale
+          var isPortale = matchPaziente(riga.paziente, riga.data, cog, S.idoctors);
+          var impFattPortale = 0;
+          var detrazione = 0;
+          if(isPortale){
+            var mp = S.idoctors.find(function(p){
+              if(p.cognome!==cog) return false;
+              if(normDate(p.data)!==normDate(riga.data)) return false;
+              var wR=normName(riga.paziente).split(' ').filter(function(w){return w.length>2;});
+              var wP=normName(p.paziente).split(' ').filter(function(w){return w.length>2;});
+              return wR.some(function(w){return wP.indexOf(w)>=0;});
+            });
+            impFattPortale = mp ? (parseFloat(mp.importo)||imp_fattura) : imp_fattura;
+            detrazione = impFattPortale * DET;
+          }
+
+          var compensoCorretto = compBase - detrazione;
+
+          // Confronto con XLS
+          var xlsComp = riga.imp;
+          var diffXLS = Math.abs(xlsComp - compensoCorretto);
+          var erroreXLS = diffXLS > 0.5;
+
+          lordo += compBase;
+          det += detrazione;
+          d.prestazioni++;
+
+          righeCalcolate.push({
+            data: riga.data,
+            paziente: riga.paziente,
+            desc: riga.desc,
+            imp_fattura: imp_fattura,
+            compBase: compBase,
+            xlsComp: xlsComp,
+            isPortale: isPortale,
+            impFattPortale: impFattPortale,
+            detrazione: detrazione,
+            compensoCorretto: compensoCorretto,
+            erroreXLS: erroreXLS,
+            diffXLS: diffXLS,
+            xmlTrovato: !!xmlMatch
           });
-          impFattura = mp ? (parseFloat(mp.importo)||imp) : imp;
-          detrazione = impFattura * DET;
-        }
-
-        var compensoCorretto = compBase - detrazione;
-
-        return {
-          data: riga.data, paziente: riga.paziente, desc: riga.desc,
-          imp_fattura: imp, compBase: compBase,
-          isPortale: isPortale, impFattura: impFattura,
-          detrazione: detrazione, compensoCorretto: compensoCorretto
-        };
+        });
       });
 
-      var lordo = righeCalcolate.reduce(function(s,r){return s+r.compBase;},0);
-      var det = righeCalcolate.reduce(function(s,r){return s+r.detrazione;},0);
-      var imponibile = lordo - det;
-      var ritenuta = imponibile * RIT;
-      var netto = imponibile - ritenuta;
-      var fatturato = righeCalcolate.reduce(function(s,r){return s+r.imp_fattura;},0);
+      d.dettaglio = righeCalcolate;
 
-      var d = {
-        fatturato: fatturato,
-        prestazioni: righeCalcolate.length,
-        sedi: xmlM.sedi,
-        dettaglio: righeCalcolate
+    } else {
+      // ── FALLBACK: solo XML aggregato ────────────────────────────────
+      var xmlMedico = [...S.rg,...S.zara].filter(function(f){return f.cognome===cog;});
+      xmlMedico.forEach(function(f){
+        d.fatturato+=f.fatturato; d.prestazioni+=f.prestazioni;
+        if(d.sedi.indexOf(f.sede)<0) d.sedi.push(f.sede);
+      });
+      lordo = q.fisso ? d.prestazioni*q.fisso : (q.pct ? d.fatturato*q.pct/100 : d.fatturato*0.70);
+      det = pp.reduce(function(s,p){return s+(p.imponibile||p.importo)*DET;},0);
+    }
+
+    var imponibile = lordo - det;
+    var ritenuta = imponibile * RIT;
+    var netto = imponibile - ritenuta;
+
+    // XLS check globale
+    var xlsCheck = null;
+    if(xlsData && righeCalcolate.length > 0){
+      var xlsLordo = xlsData.reduce(function(s,sede){return s+sede.subtotale;},0);
+      var nErr = righeCalcolate.filter(function(r){return r.erroreXLS;}).length;
+      var nNoXML = righeCalcolate.filter(function(r){return !r.xmlTrovato;}).length;
+      xlsCheck = {
+        xlsLordo: xlsLordo,
+        calcolatoLordo: imponibile,
+        diff: Math.abs(xlsLordo - imponibile),
+        ok: Math.abs(xlsLordo - imponibile) < 1.0,
+        nErr: nErr,
+        nNoXML: nNoXML
       };
+    }
 
-      // ── VERIFICA CON XLS ─────────────────────────────────────────────
-      var xlsData = S.xls_corr[cog];
-      var xlsCheck = null;
-      if(xlsData && xlsData.length > 0){
-        var xlsLordo = xlsData.reduce(function(s,sede){return s+sede.subtotale;},0);
-        var xlsRitenuta = xlsLordo * RIT;
-        var xlsNetto = xlsLordo - xlsRitenuta;
-        var diff = Math.abs(xlsLordo - (lordo-det));
-        xlsCheck = {
-          xlsLordo: xlsLordo,
-          calcolatoLordo: lordo-det,
-          diff: diff,
-          ok: diff < 1.0 // tolleranza €1
-        };
-      }
-
-      S.risultati.push({cog:cog,q:q,d:d,lordo:lordo,det:det,n_portali:pp.length,imponibile:imponibile,ritenuta:ritenuta,netto:netto,pp:pp,righeCalcolate:righeCalcolate,xlsCheck:xlsCheck});
+    S.risultati.push({
+      cog:cog, q:q, d:d, lordo:lordo, det:det,
+      n_portali:pp.length, imponibile:imponibile,
+      ritenuta:ritenuta, netto:netto, pp:pp,
+      righeCalcolate:righeCalcolate, xlsCheck:xlsCheck
     });
-  }
+  });
   renderVerifica(meseNome,a);
   renderCorrispettivi(meseNome,a);
   renderIncongruenze();
