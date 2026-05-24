@@ -811,48 +811,50 @@ function elabora(){
       map[f.cognome].dettaglio.push(...f.dettaglio);
     }
   });
-  Object.keys(map).forEach(cog=>{
-    const d=map[cog];
-    const q=DB[cog]||{pct:70,note:'70% (default)'};
-    let lordo=0;
-    if(q.tipo==='ginecologa' && d.dettaglio){
-      // Ginecologhe: % sulla visita + €15 fisso sui tamponi
-      const imp_tamponi = d.dettaglio.filter(r=>isTampone(r.desc)).reduce((s,r)=>s+r.imp,0);
-      const n_tamponi = d.dettaglio.filter(r=>isTampone(r.desc)).length;
-      const imp_visite = d.fatturato - imp_tamponi;
-      lordo = (imp_visite * q.pct/100) + (n_tamponi * q.fisso_tampone);
-    } else if(q.fisso){
-      lordo=d.prestazioni*q.fisso;
-    } else if(q.pct){
-      lordo=d.fatturato*q.pct/100;
+  Object.keys(map).forEach(function(cog){
+    var d = map[cog];
+    var q = DB[cog] || {pct:70, note:'70% (default)'};
+
+    // XLS corrispettivi caricati? → usa subtotale come lordo già calcolato
+    var xlsData = S.xls_corr[cog];
+    var lordo = 0;
+
+    if(xlsData && xlsData.length > 0) {
+      var dettaglio_xls = [];
+      xlsData.forEach(function(sede){
+        dettaglio_xls = dettaglio_xls.concat(sede.righe);
+        lordo += sede.subtotale;
+      });
+      d.dettaglio = dettaglio_xls;
     } else {
-      lordo=d.fatturato*0.70;
+      // Nessun XLS: calcola dalla quota anagrafica (demo / solo XML)
+      if(q.tipo==='ginecologa' && d.dettaglio){
+        var imp_tamponi = d.dettaglio.filter(function(r){return isTampone(r.desc);}).reduce(function(s,r){return s+r.imp;},0);
+        var n_tamponi = d.dettaglio.filter(function(r){return isTampone(r.desc);}).length;
+        var imp_visite = d.fatturato - imp_tamponi;
+        lordo = (imp_visite * q.pct/100) + (n_tamponi * q.fisso_tampone);
+      } else if(q.fisso){
+        lordo = d.prestazioni * q.fisso;
+      } else if(q.pct){
+        lordo = d.fatturato * q.pct/100;
+      } else {
+        lordo = d.fatturato * 0.70;
+      }
     }
-    const pp=(S.portali[cog]||[]);
-    // Logica corretta:
-    // detrazione = imponibile_fattura (escluso bollo) × 6% × 1.22
-    // sottratta dal compenso medico lordo
-    let det_tot=0;
-    pp.forEach(p=>{
-      const imp_fatt = p.imponibile||p.importo; // imponibile fattura senza bollo
+
+    // Detrazioni portali: 6%+IVA 22% sull'imponibile fattura elettronica
+    var pp = S.portali[cog] || [];
+    var det_tot = 0;
+    pp.forEach(function(p){
+      var imp_fatt = p.imponibile || p.importo;
       det_tot += imp_fatt * DET;
     });
-    const det=det_tot;
-    const imponibile=lordo-det;
-    const ritenuta=imponibile*RIT;
-    const netto=imponibile-ritenuta;
-    // Aggiungi dettaglio da XLS corrispettivi se disponibile
-    var xlsData = S.xls_corr[cog];
-    var dettaglio_xls = null;
-    if(xlsData && xlsData.length > 0) {
-      dettaglio_xls = [];
-      xlsData.forEach(function(sede){ dettaglio_xls = dettaglio_xls.concat(sede.righe); });
-    }
-    // Merge con dettaglio demo se presente
-    if(!dettaglio_xls && d.dettaglio) dettaglio_xls = d.dettaglio;
-    if(dettaglio_xls) d.dettaglio = dettaglio_xls;
+    var det = det_tot;
+    var imponibile = lordo - det;
+    var ritenuta = imponibile * RIT;
+    var netto = imponibile - ritenuta;
 
-    S.risultati.push({cog:cog,q:q,d:d,lordo:lordo,det:det,n_portali:pp.length,imponibile:imponibile,ritenuta:ritenuta,netto:netto,pp:pp});
+    S.risultati.push({cog:cog, q:q, d:d, lordo:lordo, det:det, n_portali:pp.length, imponibile:imponibile, ritenuta:ritenuta, netto:netto, pp:pp});
   });
   renderVerifica(meseNome,a);
   renderCorrispettivi(meseNome,a);
