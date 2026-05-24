@@ -408,10 +408,17 @@ input[type=file]{display:none}
           <div class="dz-sub">Carica tutti gli XLS del mese — genera il corrispettivo formale completo con ogni paziente</div>
           <div class="dz-info" id="dz-xls-info"></div>
         </div>
+        <div class="dz" id="dz-gest" onclick="document.getElementById('fi-gest').click()" ondragover="dzOn(event,'dz-gest')" ondragleave="dzOff('dz-gest')" ondrop="dzDrop(event,'dz-gest','gestionale')" style="grid-column:1/-1">
+          <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div class="dz-title">Export Gestionale (facoltativo ma consigliato)</div>
+          <div class="dz-sub">Export agenda da gestionaleambulatorio.it — permette il match paziente+medico definitivo</div>
+          <div class="dz-info" id="dz-gest-info"></div>
+        </div>
       </div>
 
       <input type="file" id="fi-rg" accept=".zip" onchange="handleF(this,'rg','dz-rg')">
       <input type="file" id="fi-xls" accept=".xls,.xlsx" multiple onchange="handleF(this,'xls_corr','dz-xls')">
+      <input type="file" id="fi-gest" accept=".xlsx,.xls,.csv" onchange="handleF(this,'gestionale','dz-gest')">
       <input type="file" id="fi-zara" accept=".zip" onchange="handleF(this,'zara','dz-zara')">
       <input type="file" id="fi-idoc" accept=".xlsx,.xls" multiple onchange="handleF(this,'idoctors','dz-idoc')">
       <input type="file" id="fi-dav" accept=".xlsx,.xls" multiple onchange="handleF(this,'davinci','dz-dav')">
@@ -631,6 +638,14 @@ function processFiles(files,tipo,dzId){
     });
     return;
   }
+  if(tipo==='gestionale'){
+    Array.from(files).forEach(function(f){
+      var r=new FileReader();
+      r.onload=function(e){parseGestionale(e.target.result,f.name);};
+      r.readAsArrayBuffer(f);
+    });
+    return;
+  }
   if(tipo==='rg'||tipo==='zara'){
     Array.from(files).forEach(function(f){
       var r=new FileReader();
@@ -646,6 +661,56 @@ function processFiles(files,tipo,dzId){
       r.readAsArrayBuffer(f);
     });
   }
+}
+
+function parseGestionale(buf, fname){
+  try {
+    var wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if(rows.length < 2) return;
+
+    // Header: DataVisita, OraVisita, TipoVisita, CodiceFiscale, Cognome, Nome, ..., Medico, StatoVisita
+    var h = rows[0].map(function(c){return String(c).toLowerCase().trim();});
+    var iData = h.indexOf('datavisita');
+    var iTipo = h.indexOf('tipovisita');
+    var iCognome = h.indexOf('cognome');
+    var iNome = h.indexOf('nome');
+    var iMedico = h.indexOf('medico');
+    var iStato = h.indexOf('statovisita');
+
+    if(iData<0||iMedico<0) { showToast('Export non riconosciuto'); return; }
+
+    var count = 0;
+    for(var i=1;i<rows.length;i++){
+      var r = rows[i];
+      var stato = String(r[iStato]||'').toUpperCase();
+      if(stato==='ANNULLATO') continue;
+
+      var data = String(r[iData]||'').trim();
+      var tipo = String(r[iTipo]||'').trim();
+      var cognome = String(r[iCognome]||'').trim().toUpperCase();
+      var nome = String(r[iNome]||'').trim().toUpperCase();
+      var medico = String(r[iMedico]||'').trim().toUpperCase();
+      var paziente = cognome+' '+nome;
+
+      // Estrai cognome medico per match con DB
+      var cognomeMedico = medico.split(' ')[0];
+
+      var key = normName(paziente)+'|'+normDate(data);
+      if(!S.gestionale[key]) S.gestionale[key] = [];
+      S.gestionale[key].push({
+        data:data, paziente:paziente, tipo:tipo,
+        medico:medico, cognomeMedico:cognomeMedico
+      });
+      count++;
+    }
+
+    var info = document.getElementById('dz-gest-info');
+    if(info){ info.textContent = count+' appuntamenti caricati'; }
+    document.getElementById('dz-gest').classList.add('loaded');
+    showToast('Gestionale: '+count+' appuntamenti caricati');
+  } catch(e){ showToast('Errore gestionale: '+e.message); }
 }
 
 function parseZipXML(buf, sede, dzId){
@@ -965,23 +1030,37 @@ function elabora(){
           // Cerca la fattura XML corrispondente (paziente + data)
           var key = normName(riga.paziente)+'|'+normDate(riga.data);
 
-          // Match esatto
-          var xmlRighe = xmlIndex[key];
+          // Match con gestionale prima (fonte autoritativa per medico+paziente+data)
+          var gestKey = normName(riga.paziente)+'|'+normDate(riga.data);
+          var gestMatch = S.gestionale[gestKey] ? S.gestionale[gestKey].find(function(g){
+            return g.cognomeMedico === cog;
+          }) : null;
+
+          // Match XML: paziente + data
+          var xmlRighe = xmlIndex[gestKey];
           var xmlMatch = null;
 
           if(xmlRighe && xmlRighe.length > 0){
-            // Se c'è una sola fattura per quel paziente+data → match diretto
             if(xmlRighe.length === 1){
               xmlMatch = xmlRighe[0];
             } else {
-              // Più fatture stesso giorno stesso paziente → prendi quella più vicina per importo
-              // o quella senza nome medico (da assegnare)
-              xmlMatch = xmlRighe.find(function(x){
-                return !x.cognomeMedico || x.cognomeMedico === cog;
-              }) || xmlRighe[0];
+              // Con gestionale: prendi la fattura che corrisponde al tipo visita
+              if(gestMatch){
+                xmlMatch = xmlRighe.find(function(x){
+                  var descUp = x.desc.toUpperCase();
+                  var tipoUp = gestMatch.tipo.toUpperCase().split(' ')[0];
+                  return descUp.indexOf(tipoUp) >= 0;
+                }) || xmlRighe.find(function(x){
+                  return !x.cognomeMedico || x.cognomeMedico === cog;
+                }) || xmlRighe[0];
+              } else {
+                xmlMatch = xmlRighe.find(function(x){
+                  return !x.cognomeMedico || x.cognomeMedico === cog;
+                }) || xmlRighe[0];
+              }
             }
           } else {
-            // Prova match parziale (solo prima parola cognome)
+            // Match parziale su cognome
             var primaParola = normName(riga.paziente).split(' ')[0];
             var dataRiga = normDate(riga.data);
             var found = null;
