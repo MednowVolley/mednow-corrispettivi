@@ -258,6 +258,21 @@ input[type=file]{display:none}
 .cf-export-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .cf-sede-label{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--blue-dim);color:var(--blue);margin-bottom:8px}
 
+
+/* ── VERIFICA RIGHE ── */
+.riga-ok td { background: transparent; }
+.riga-err td { background: #fff8e6 !important; }
+.riga-err td:first-child { border-left: 3px solid var(--amber); }
+.riga-fix td { background: #eaf3de !important; }
+.riga-fix td:first-child { border-left: 3px solid var(--green); }
+.badge-err-riga { display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;background:var(--amber-dim);color:var(--amber);margin-left:6px }
+.badge-ok-riga { display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;background:var(--green-dim);color:var(--green);margin-left:6px }
+.verifica-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px }
+.vs-card { padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500 }
+.vs-ok { background:var(--green-dim);color:var(--green) }
+.vs-warn { background:var(--amber-dim);color:var(--amber) }
+.vs-err { background:var(--red-dim);color:var(--red) }
+
 /* ── EMPTY ── */
 .empty{text-align:center;padding:48px 24px;color:var(--text3)}
 .empty svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
@@ -575,7 +590,7 @@ const DB = {
   "ZAMPELLA":{pct:70,note:"70/30"},
 };
 
-let S = {rg:[],zara:[],portali:{},risultati:[],xls_corr:{}};
+let S = {rg:[],zara:[],portali:{},risultati:[],xls_corr:{},idoctors:[]};
 
 function updatePeriodo(){
   const m=document.getElementById('sel-mese').value;
@@ -724,7 +739,9 @@ function parsePortale(buf,tipo,fname){
       const cog=cognome(med);
       if(!S.portali[cog])S.portali[cog]=[];
       const imp=parseFloat(String(r[cols.importo]||0).replace(/[€$\s]/g,'').replace(',','.'))||0;
-      S.portali[cog].push({paziente:String(r[cols.paziente]||''),data:String(r[cols.data]||''),importo:imp,portale:tipo==='idoctors'?'iDoctors':'Davinci/Elty'});
+      var entry = {paziente:String(r[cols.paziente]||''),data:String(r[cols.data]||''),importo:imp,portale:tipo==='idoctors'?'iDoctors':'Davinci/Elty',medico:med,cognome:cog};
+      S.portali[cog].push(entry);
+      if(tipo==='idoctors') S.idoctors.push(entry);
     }
   }catch(e){console.error(e)}
 }
@@ -821,11 +838,44 @@ function elabora(){
 
     if(xlsData && xlsData.length > 0) {
       var dettaglio_xls = [];
+      var portaleList = S.idoctors; // lista completa prenotazioni portali
+
       xlsData.forEach(function(sede){
-        dettaglio_xls = dettaglio_xls.concat(sede.righe);
-        lordo += sede.subtotale;
+        sede.righe.forEach(function(riga){
+          // Verifica se questa riga è da portale
+          var isPortale = matchPaziente(riga.paziente, riga.data, cog, portaleList);
+          riga.isPortale = isPortale;
+          // Compenso corretto: se portale, applico detrazione 7,32% sull'importo fattura
+          // L'importo in riga è già il compenso del medico (dall'XLS)
+          // Per trovare l'importo fattura, cerco in iDoctors
+          var impFattura = 0;
+          if(isPortale){
+            var matchedPortale = portaleList.find(function(p){
+              if(p.cognome !== cog) return false;
+              var nNorm = normName(riga.paziente);
+              var pNorm = normName(p.paziente);
+              var dNorm = normDate(riga.data);
+              var pDate = normDate(p.data);
+              if(dNorm !== pDate) return false;
+              var wordsRiga = nNorm.split(' ').filter(function(w){return w.length>2;});
+              var wordsPort = pNorm.split(' ').filter(function(w){return w.length>2;});
+              return wordsRiga.some(function(w){ return wordsPort.indexOf(w) >= 0; });
+            });
+            impFattura = matchedPortale ? (parseFloat(matchedPortale.importo)||0) : 0;
+          }
+          riga.impFattura = impFattura;
+          riga.detrazione = isPortale ? impFattura * DET : 0;
+          riga.compensoCorretto = riga.imp - riga.detrazione;
+          riga.errore = isPortale && riga.detrazione > 0;
+          dettaglio_xls.push(riga);
+          lordo += riga.imp; // somma compensi dall'XLS
+        });
       });
       d.dettaglio = dettaglio_xls;
+
+      // Ricalcola lordo corretto (con detrazioni portali già applicate riga per riga)
+      // lordo = somma compensi XLS (come scritto nel file)
+      // det = totale detrazioni portali da sottrarre
     } else {
       // Nessun XLS: calcola dalla quota anagrafica (demo / solo XML)
       if(q.tipo==='ginecologa' && d.dettaglio){
@@ -842,13 +892,19 @@ function elabora(){
       }
     }
 
-    // Detrazioni portali: 6%+IVA 22% sull'imponibile fattura elettronica
+    // Detrazioni portali
     var pp = S.portali[cog] || [];
     var det_tot = 0;
-    pp.forEach(function(p){
-      var imp_fatt = p.imponibile || p.importo;
-      det_tot += imp_fatt * DET;
-    });
+    if(xlsData && xlsData.length > 0 && d.dettaglio){
+      // Usa detrazioni calcolate riga per riga dal matching
+      d.dettaglio.forEach(function(r){ det_tot += (r.detrazione||0); });
+    } else {
+      // Fallback: calcola da report portali
+      pp.forEach(function(p){
+        var imp_fatt = p.imponibile || p.importo;
+        det_tot += imp_fatt * DET;
+      });
+    }
     var det = det_tot;
     var imponibile = lordo - det;
     var ritenuta = imponibile * RIT;
@@ -867,6 +923,32 @@ const fmt=n=>Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFr
 const fmtK=n=>Math.round(n).toLocaleString('it-IT');
 
 function initials(s){const w=s.split(/\s+/);return w.length>1?w[0][0]+w[1][0]:s.slice(0,2)}
+
+function normName(s){
+  return String(s||'').toLowerCase().trim()
+    .replace(/dr\.?s?\.?\s*/g,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');
+}
+
+function normDate(s){
+  // Converte "02/04/2026" o "02/04/2026 - 09:00" → "02/04/2026"
+  return String(s||'').trim().split(' ')[0].split('-')[0].trim();
+}
+
+function matchPaziente(nomePaz, dataRiga, cognomeMedico, portaleList){
+  // Cerca in portaleList (iDoctors/Davinci) se questa riga è da portale
+  var nNorm = normName(nomePaz);
+  var dNorm = normDate(dataRiga);
+  return portaleList.some(function(p){
+    if(p.cognome !== cognomeMedico) return false;
+    var pNorm = normName(p.paziente);
+    var pDate = normDate(p.data);
+    // Match data esatta + match parziale nome (almeno una parola in comune)
+    if(dNorm !== pDate) return false;
+    var wordsRiga = nNorm.split(' ').filter(function(w){return w.length>2;});
+    var wordsPort = pNorm.split(' ').filter(function(w){return w.length>2;});
+    return wordsRiga.some(function(w){ return wordsPort.indexOf(w) >= 0; });
+  });
+}
 
 function isTampone(desc){
   const d = desc.toLowerCase();
