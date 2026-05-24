@@ -855,7 +855,7 @@ function buildCorrispettivoHTML(r, mese, anno) {
 
   // Nota portali
   let notaPortali = '';
-  if(r.n_portali>0) notaPortali = '<div class="cf-portali-note">Detrazione portali: '+r.n_portali+' prestazioni 6%+IVA sull'imponibile = -€'+fmt(r.det)+'</div>';
+  if(r.n_portali>0) notaPortali = '<div class="cf-portali-note">Detrazione portali: '+r.n_portali+' prestazioni 6%+IVA sull\'imponibile = -€'+fmt(r.det)+'</div>';
 
   // Tabella prestazioni
   let tabellaHTML = '';
@@ -885,13 +885,13 @@ function buildCorrispettivoHTML(r, mese, anno) {
     +'<div class="cf-tot-row"><span class="cf-tot-label">Compenso lordo ('+r.q.note+')</span><span class="cf-tot-val blue">€'+fmt(r.lordo)+'</span></div>'
     +(r.n_portali>0?'<div class="cf-tot-row"><span class="cf-tot-label">Detrazione portali</span><span class="cf-tot-val" style="color:var(--amber)">-€'+fmt(r.det)+'</span></div>':'')
     +'<div class="cf-tot-row"><span class="cf-tot-label">Totale imponibile netto</span><span class="cf-tot-val">€'+fmt(r.imponibile)+'</span></div>'
-    +'<div class="cf-tot-row main"><span class="cf-tot-label" style="font-weight:700">Ritenuta d'acconto 20%</span><span class="cf-tot-val red">-€'+fmt(r.ritenuta)+'</span></div>'
+    +'<div class="cf-tot-row main"><span class="cf-tot-label" style="font-weight:700">Ritenuta acconto 20%</span><span class="cf-tot-val red">-€'+fmt(r.ritenuta)+'</span></div>'
     +'<div class="cf-tot-row"><span class="cf-tot-label" style="font-weight:700;font-size:14px">Totale netto</span><span class="cf-tot-val green">€'+fmt(r.netto)+'</span></div>'
     +'</div>'
     +'<div class="cf-footer">MedNow Medical Center Srl · Viale Zara 113A Milano · PEC mednow@legalmail.it · P.IVA 12120830968 · Cod. SDI KGVVJ2H</div>'
     +'<div style="display:flex;gap:6px;padding:8px 16px;border-top:1px solid var(--border2);background:var(--surface2)">'
-    +'<button class="btn btn-sm btn-primary" onclick="stampaSingolo(''+r.cog+'')">Stampa</button>'
-    +'<button class="btn btn-sm" onclick="copiaSingolo(''+r.cog+'','+r.lordo+','+r.det+','+r.ritenuta+','+r.netto+')">Copia testo</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="stampaSingolo(\'"+r.cog+"\')">Stampa</button>'
+    +'<button class="btn btn-sm" onclick="copiaSingolo(\'"+r.cog+"\',"+r.lordo+","+r.det+","+r.ritenuta+","+r.netto+")">Copia</button>'
     +'</div></div>';
 }
 
@@ -912,24 +912,16 @@ function stampaSingolo(cog){
 }
 
 function copiaSingolo(cog,lordo,det,rit,netto){
-  const t='CORRISPETTIVO - '+cog+'
-
-Compenso lordo: EUR '+fmt(lordo)+'
-Detrazione portali: -EUR '+fmt(det)+'
-Ritenuta 20%: -EUR '+fmt(rit)+'
-Netto da corrispondere: EUR '+fmt(netto);
-  navigator.clipboard.writeText(t);
-  showToast('Copiato');
+  var lines=["CORRISPETTIVO - "+cog,"","Compenso lordo: EUR "+fmt(lordo),"Detrazione portali: -EUR "+fmt(det),"Ritenuta 20%: -EUR "+fmt(rit),"Netto da corrispondere: EUR "+fmt(netto)];
+  navigator.clipboard.writeText(lines.join("\n"));
+  showToast("Copiato");
 }
-
 function stampaTutti(){window.print();}
 function copiaTutti(){
-  const t=S.risultati.map(function(r){return r.cog+': EUR '+fmt(r.netto)+' netto';}).join('
-');
+  var t=S.risultati.map(function(r){return r.cog+": EUR "+fmt(r.netto)+" netto";}).join("\n");
   navigator.clipboard.writeText(t);
-  showToast('Tutti copiati');
+  showToast("Tutti copiati");
 }
-
 function copia(cog,lordo,det,rit,netto,periodo){copiaSingolo(cog,lordo,det,rit,netto);}
 
 function renderIncongruenze(){
