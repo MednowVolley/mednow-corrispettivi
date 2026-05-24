@@ -1175,11 +1175,16 @@ function elabora(){
       righeCalcolate:righeCalcolate, xlsCheck:xlsCheck
     });
   });
-  renderVerifica(meseNome,a);
-  renderCorrispettivi(meseNome,a);
-  renderIncongruenze();
+  try {
+    renderVerifica(meseNome,a);
+    renderCorrispettivi(meseNome,a);
+    renderIncongruenze();
+  } catch(err) {
+    console.error('Errore elaborazione:', err);
+    showToast('Errore: '+err.message);
+  }
   document.getElementById('sb-periodo').textContent=meseNome+' '+a;
-  document.querySelectorAll('.nav-item')[1].click();
+  nav(document.querySelectorAll('.nav-item')[1],'verifica');
 }
 
 const fmt=n=>Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
