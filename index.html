@@ -838,16 +838,14 @@ function elabora(){
 
     if(xlsData && xlsData.length > 0) {
       var dettaglio_xls = [];
-      var portaleList = S.idoctors; // lista completa prenotazioni portali
+      var portaleList = S.idoctors;
 
       xlsData.forEach(function(sede){
         sede.righe.forEach(function(riga){
-          // Verifica se questa riga è da portale
+          // Verifica se questa riga è da portale (match paziente+data)
           var isPortale = matchPaziente(riga.paziente, riga.data, cog, portaleList);
           riga.isPortale = isPortale;
-          // Compenso corretto: se portale, applico detrazione 7,32% sull'importo fattura
-          // L'importo in riga è già il compenso del medico (dall'XLS)
-          // Per trovare l'importo fattura, cerco in iDoctors
+
           var impFattura = 0;
           if(isPortale){
             var matchedPortale = portaleList.find(function(p){
@@ -863,19 +861,21 @@ function elabora(){
             });
             impFattura = matchedPortale ? (parseFloat(matchedPortale.importo)||0) : 0;
           }
+
+          // Detrazione = 7.32% sull'importo FATTURA (non sul compenso)
           riga.impFattura = impFattura;
-          riga.detrazione = isPortale ? impFattura * DET : 0;
+          riga.detrazione = isPortale && impFattura > 0 ? impFattura * DET : 0;
+          // compensoCorretto = compenso XLS - detrazione portale
           riga.compensoCorretto = riga.imp - riga.detrazione;
+          // errore = il portale c'è ma la detrazione non era nell'XLS
           riga.errore = isPortale && riga.detrazione > 0;
+
           dettaglio_xls.push(riga);
-          lordo += riga.imp; // somma compensi dall'XLS
+          // lordo = somma compensi dall'XLS (come scritto)
+          lordo += riga.imp;
         });
       });
       d.dettaglio = dettaglio_xls;
-
-      // Ricalcola lordo corretto (con detrazioni portali già applicate riga per riga)
-      // lordo = somma compensi XLS (come scritto nel file)
-      // det = totale detrazioni portali da sottrarre
     } else {
       // Nessun XLS: calcola dalla quota anagrafica (demo / solo XML)
       if(q.tipo==='ginecologa' && d.dettaglio){
@@ -892,20 +892,20 @@ function elabora(){
       }
     }
 
-    // Detrazioni portali
+    // Detrazioni portali: somma delle detrazioni riga per riga
     var pp = S.portali[cog] || [];
     var det_tot = 0;
     if(xlsData && xlsData.length > 0 && d.dettaglio){
-      // Usa detrazioni calcolate riga per riga dal matching
       d.dettaglio.forEach(function(r){ det_tot += (r.detrazione||0); });
     } else {
-      // Fallback: calcola da report portali
       pp.forEach(function(p){
         var imp_fatt = p.imponibile || p.importo;
         det_tot += imp_fatt * DET;
       });
     }
     var det = det_tot;
+    // lordo corretto = compensi XLS - detrazioni portali
+    // (ritenuta si applica sul netto dopo detrazioni)
     var imponibile = lordo - det;
     var ritenuta = imponibile * RIT;
     var netto = imponibile - ritenuta;
@@ -973,12 +973,12 @@ function renderVerifica(mese,anno){
   const tot_d=S.risultati.reduce((s,r)=>s+r.det,0);
   const tot_n=S.risultati.reduce((s,r)=>s+r.netto,0);
 
-  document.getElementById('verifica-kpi').innerHTML=`
-    <div class="kpi blue"><div class="kpi-label">Fatturato totale</div><div class="kpi-val">€${fmtK(tot_f)}</div><div class="kpi-sub">entrambe le sedi</div></div>
-    <div class="kpi blue"><div class="kpi-label">Compensi lordi</div><div class="kpi-val">€${fmtK(tot_l)}</div><div class="kpi-sub">${S.risultati.length} medici</div></div>
-    <div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€${fmtK(tot_d)}</div><div class="kpi-sub">6% + IVA 22%</div></div>
-    <div class="kpi green"><div class="kpi-label">Netto da pagare</div><div class="kpi-val">€${fmtK(tot_n)}</div><div class="kpi-sub">dopo ritenuta 20%</div></div>
-  `;
+  var tot_err = S.risultati.filter(function(r){ return r.d.dettaglio && r.d.dettaglio.some(function(p){return p.isPortale&&p.detrazione>0&&Math.abs(p.imp-(p.imp-p.detrazione))>=0.5;}); }).length;
+  document.getElementById('verifica-kpi').innerHTML = ''
+    +'<div class="kpi blue"><div class="kpi-label">Compensi da XLS</div><div class="kpi-val">€'+fmtK(tot_l)+'</div><div class="kpi-sub">'+S.risultati.length+' medici</div></div>'
+    +'<div class="kpi amber"><div class="kpi-label">Detrazioni portali</div><div class="kpi-val">€'+fmtK(tot_d)+'</div><div class="kpi-sub">6% + IVA 22%</div></div>'
+    +'<div class="kpi '+(tot_err>0?'red':'green')+'"><div class="kpi-label">'+(tot_err>0?'⚠ Medici con errori':'✓ Tutti corretti')+'</div><div class="kpi-val">'+(tot_err>0?tot_err+' medici':S.risultati.length+' medici')+'</div><div class="kpi-sub">'+(tot_err>0?'detrazioni mancanti':'nessun errore')+'</div></div>'
+    +'<div class="kpi green"><div class="kpi-label">Netto corretto totale</div><div class="kpi-val">€'+fmtK(tot_n)+'</div><div class="kpi-sub">dopo ritenuta 20%</div></div>';
 
   let html='';
   S.risultati.sort((a,b)=>b.lordo-a.lordo).forEach((r,i)=>{
