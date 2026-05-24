@@ -1049,12 +1049,29 @@ function buildCorrispettivoHTML(r, mese, anno) {
   // Tabella prestazioni
   let tabellaHTML = '';
   if(hasDett) {
-    const righe = r.d.dettaglio.map(function(p) {
-      const isT = r.q.tipo==='ginecologa' && isTampone(p.desc);
-      const comp = isT ? 15 : (r.q.pct ? p.imp*r.q.pct/100 : (r.q.fisso||p.imp*0.7));
-      return '<tr><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+'</td><td>'+p.desc+'</td><td style="text-align:right">€'+fmt(p.imp)+'</td><td style="text-align:right">€'+fmt(comp)+'</td></tr>';
+    var nErr = 0;
+    var righe = r.d.dettaglio.map(function(p) {
+      var badge = '', rigaClass = 'riga-ok', compStr = '';
+      if(p.isPortale && p.detrazione > 0){
+        var compCorr = p.imp - p.detrazione;
+        nErr++;
+        rigaClass = 'riga-err';
+        badge = '<span class="badge-err-riga">⚠ portale -€'+fmt(p.detrazione)+'</span>';
+        compStr = '€'+fmt(compCorr);
+      } else if(p.isPortale){
+        rigaClass = 'riga-fix';
+        badge = '<span class="badge-ok-riga">✓ portale</span>';
+        compStr = '€'+fmt(p.imp);
+      } else {
+        compStr = '€'+fmt(p.imp);
+      }
+      return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+p.desc+'</td><td style="text-align:right">€'+fmt(p.imp)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
     }).join('');
-    tabellaHTML = '<table class="cf-prest-table"><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Importo</th><th>Compenso</th></tr></thead><tbody>'+righe+'</tbody></table>';
+    var nOk = r.d.dettaglio.length - nErr;
+    var summaryHTML = '';
+    if(nErr > 0) summaryHTML = '<div class="verifica-summary"><span class="vs-card vs-warn">⚠ '+nErr+' righe con detrazione portale mancante</span><span class="vs-card vs-ok">'+nOk+' righe OK</span></div>';
+    else if(r.n_portali > 0) summaryHTML = '<div class="verifica-summary"><span class="vs-card vs-ok">✓ Tutti i compensi corretti ('+r.n_portali+' portali già detratti)</span></div>';
+    tabellaHTML = summaryHTML+'<table class="cf-prest-table"><thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Comp. XLS</th><th>Comp. corretto</th></tr></thead><tbody>'+righe+'</tbody></table>';
   } else {
     tabellaHTML = '<div style="padding:12px 16px;font-size:12px;color:var(--text2)">'+r.d.prestazioni+' prestazioni · totale fatturato €'+fmt(r.d.fatturato)+'<br><span style="font-size:11px;color:var(--text3)">Carica gli XLS corrispettivi per il dettaglio riga per riga</span></div>';
   }
