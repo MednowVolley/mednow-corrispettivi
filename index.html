@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mednow — Corrispettivi Medici</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -630,6 +631,14 @@ function processFiles(files,tipo,dzId){
     });
     return;
   }
+  if(tipo==='rg'||tipo==='zara'){
+    Array.from(files).forEach(function(f){
+      var r=new FileReader();
+      r.onload=function(e){parseZipXML(e.target.result,tipo,dzId);};
+      r.readAsArrayBuffer(f);
+    });
+    return;
+  }
   if(tipo==='idoctors'||tipo==='davinci'){
     Array.from(files).forEach(f=>{
       const r=new FileReader();
@@ -637,6 +646,107 @@ function processFiles(files,tipo,dzId){
       r.readAsArrayBuffer(f);
     });
   }
+}
+
+function parseZipXML(buf, sede, dzId){
+  JSZip.loadAsync(buf).then(function(zip){
+    var xmlFiles = Object.keys(zip.files).filter(function(n){return n.endsWith('.xml');});
+    var promises = xmlFiles.map(function(name){
+      return zip.files[name].async('string').then(function(content){
+        return parseXMLFattura(content, sede);
+      });
+    });
+    Promise.all(promises).then(function(results){
+      results.forEach(function(riga){
+        if(!riga) return;
+        if(sede==='rg') S.rg.push(riga);
+        else S.zara.push(riga);
+      });
+      // Aggiorna UI
+      var info = document.getElementById(dzId+'-info');
+      if(info){
+        var tot = sede==='rg' ? S.rg.length : S.zara.length;
+        info.textContent = tot+' fatture caricate';
+        document.getElementById(dzId).classList.add('loaded');
+      }
+    });
+  }).catch(function(e){ showToast('Errore ZIP: '+e.message); });
+}
+
+function parseXMLFattura(xmlStr, sede){
+  try {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(xmlStr, 'text/xml');
+    var get = function(sel){ var el=doc.querySelector(sel); return el?el.textContent.trim():''; };
+
+    var data = get('Data');
+    var totaleStr = get('ImportoTotaleDocumento');
+    var bolloStr = get('DatiBollo ImportoBollo');
+    var totale = parseFloat(totaleStr)||0;
+    var bollo = parseFloat(bolloStr)||0;
+
+    var nomePaz = get('CessionarioCommittente Nome');
+    var cognomePaz = get('CessionarioCommittente Cognome');
+    var paziente = (cognomePaz+' '+nomePaz).trim();
+
+    // Prestazioni (escludi bollo)
+    var linee = doc.querySelectorAll('DettaglioLinee');
+    var righeXML = [];
+    linee.forEach(function(linea){
+      var desc = linea.querySelector('Descrizione');
+      var prezzo = linea.querySelector('PrezzoTotale');
+      var natura = linea.querySelector('Natura');
+      if(!desc) return;
+      var descTxt = desc.textContent.trim();
+      var prezzoVal = parseFloat((prezzo?prezzo.textContent:'0').replace(',','.'))||0;
+      if(natura && natura.textContent.trim()==='N1') return; // bollo
+      if(descTxt.toUpperCase()==='IMPOSTA DI BOLLO') return;
+
+      // Estrai cognome medico dalla descrizione
+      var cognomeMedico = estraiCognomeDaDesc(descTxt);
+      if(!cognomeMedico) return;
+
+      righeXML.push({
+        cognomeMedico: cognomeMedico,
+        paziente: paziente,
+        data: data,
+        desc: descTxt,
+        imp_fattura: prezzoVal,
+        sede: sede
+      });
+    });
+
+    if(righeXML.length===0) return null;
+
+    // Ritorna un oggetto per riga (una fattura può avere più prestazioni/medici)
+    // Ma di solito è 1 prestazione per fattura
+    return {
+      cognome: righeXML[0].cognomeMedico,
+      fatturato: totale - bollo,
+      prestazioni: righeXML.length,
+      sedi: [sede],
+      righeXML: righeXML
+    };
+  } catch(e){ return null; }
+}
+
+function estraiCognomeDaDesc(desc){
+  // "PRIMA VISITA DERMATOLOGICA- MONESTIER ALICE" → "MONESTIER"
+  var d = desc.toUpperCase();
+  // Pattern: testo - COGNOME NOME
+  var match = d.match(/[-–]\s*([A-Z]+(?:\s+[A-Z]+)?)/);
+  if(match){
+    var cognome = match[1].trim().split(/\s+/)[0];
+    // Verifica che sia un cognome nel DB
+    if(DB[cognome]) return cognome;
+    // Prova tutti i cognomi del DB
+    var found = Object.keys(DB).find(function(k){ return d.includes(k); });
+    if(found) return found;
+    // Se non trovato nel DB ma pattern valido, usa comunque il cognome estratto
+    if(cognome.length > 2) return cognome;
+  }
+  // Cerca direttamente nel DB
+  return Object.keys(DB).find(function(k){ return d.includes(k); }) || '';
 }
 
 function parseXLSCorr(buf,fname){
@@ -1038,12 +1148,16 @@ function renderVerifica(mese,anno){
       </div>
       <div class="mc-body" id="mcb-${i}">
         <div class="mc-amounts">
-          <div class="ma"><div class="ma-label">Fatturato</div><div class="ma-val">€${fmt(r.d.fatturato)}</div></div>
-          <div class="ma"><div class="ma-label">Compenso lordo${r.q.tipo==='ginecologa'?' <span style="font-size:10px;color:var(--amber)">(misto)</span>':''}</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
+          <div class="ma"><div class="ma-label">Fatturato XML</div><div class="ma-val">€${fmt(r.d.fatturato)}</div></div>
+          <div class="ma"><div class="ma-label">Compenso lordo (${r.q.note})</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
           <div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">−€${fmt(r.det)}</div></div>
           <div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">−€${fmt(r.ritenuta)}</div></div>
-          <div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
+          <div class="ma"><div class="ma-label">Netto corretto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
         </div>
+        ${r.xlsCheck ? (r.xlsCheck.ok
+          ? '<div class="alert a-ok" style="margin-bottom:10px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><div>✓ XLS corretto — corrisponde al calcolo XML (diff €'+fmt(r.xlsCheck.diff)+')</div></div>'
+          : '<div class="alert a-warn" style="margin-bottom:10px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div>⚠ XLS errato — XLS riporta €'+fmt(r.xlsCheck.xlsLordo)+' ma il calcolo corretto è €'+fmt(r.xlsCheck.calcolatoLordo)+' (diff €'+fmt(r.xlsCheck.diff)+')</div></div>'
+        ) : ''}
         ${ginecologaInfo(r)}
         ${r.n_portali>0?`
         <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
@@ -1091,20 +1205,22 @@ function buildCorrispettivoHTML(r, mese, anno) {
     var nErr = 0;
     var righe = r.d.dettaglio.map(function(p) {
       var badge = '', rigaClass = 'riga-ok', compStr = '';
+      var impShow = p.imp_fattura||p.imp||0;
+      var compShow = p.compBase||p.imp||0;
+      var compCorr = p.compensoCorretto!==undefined ? p.compensoCorretto : compShow;
       if(p.isPortale && p.detrazione > 0){
-        var compCorr = p.imp - p.detrazione;
         nErr++;
         rigaClass = 'riga-err';
         badge = '<span class="badge-err-riga">⚠ portale -€'+fmt(p.detrazione)+'</span>';
-        compStr = '€'+fmt(compCorr);
+        compStr = '<span style="color:var(--red);text-decoration:line-through">€'+fmt(compShow)+'</span> → <strong style="color:var(--green)">€'+fmt(compCorr)+'</strong>';
       } else if(p.isPortale){
         rigaClass = 'riga-fix';
         badge = '<span class="badge-ok-riga">✓ portale</span>';
-        compStr = '€'+fmt(p.imp);
+        compStr = '€'+fmt(compShow);
       } else {
-        compStr = '€'+fmt(p.imp);
+        compStr = '€'+fmt(compShow);
       }
-      return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+p.desc+'</td><td style="text-align:right">€'+fmt(p.imp)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
+      return '<tr class="'+rigaClass+'"><td>'+(p.data||'')+'</td><td>'+(p.paziente||'')+badge+'</td><td>'+p.desc+'</td><td style="text-align:right">€'+fmt(impShow)+'</td><td style="text-align:right">'+compStr+'</td></tr>';
     }).join('');
     var nOk = r.d.dettaglio.length - nErr;
     var summaryHTML = '';
