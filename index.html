@@ -484,7 +484,7 @@ const DB = {
   "ACCORNERO":{pct:70,note:"70/30"},"ADINOLFI":{pct:70,note:"70/30"},
   "ANGILLETTA":{pct:70,note:"70/30"},"BONO":{pct:60,note:"60/40"},
   "BUONAIUTO":{pct:null,fisso:105,note:"€105 vis, €50 eco"},
-  "CALCAGNI":{pct:20,note:"20/80"},"CANTIANI":{pct:80,note:"80/20"},
+  "CALCAGNI":{pct:20,tipo:"ginecologa",fisso_tampone:15,note:"20% visita + €15 tamponi"},"CANTIANI":{pct:80,note:"80/20"},
   "CAPUANO":{pct:70,note:"70/30"},"CASTORO":{pct:60,note:"60%"},
   "CAZZANIGA":{pct:null,fisso_vis:105,fisso_eco:70,note:"€105 vis, €70 eco"},
   "COCCIOLO":{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:"€50 eco, €95 onc, €75 ctrl"},
@@ -505,11 +505,11 @@ const DB = {
   "MONESTIER":{pct:50,note:"50%"},
   "MUNGIOLI":{pct:null,fisso_seduta:35,fisso_ctrl:25,note:"€35 seduta, €25 ctrl"},
   "MURARI":{pct:60,note:"60%"},"NICORA":{pct:60,note:"60%"},
-  "PADULA":{pct:60,note:"60%"},"PAGLIARO":{pct:70,note:"70/30"},
+  "PADULA":{pct:60,tipo:"ginecologa",fisso_tampone:15,note:"60% visita + €15 tamponi"},"PAGLIARO":{pct:70,note:"70/30"},
   "PANE":{pct:60,note:"60%"},"PEDULLA":{pct:null,fisso:35,note:"€35 a trattamento"},
   "PELAMATTI":{pct:70,note:"70/30"},"POZIELLO":{pct:65,note:"65%"},
   "QUARANTA":{pct:70,note:"70/30"},"ROVEDA":{pct:60,note:"60%"},
-  "SARAIS":{pct:70,note:"70/30"},"SCARABEO":{pct:70,note:"70/30"},
+  "SARAIS":{pct:70,tipo:"ginecologa",fisso_tampone:15,note:"70% visita + €15 tamponi"},"SCARABEO":{pct:70,note:"70/30"},
   "SINISI":{pct:70,note:"70/30"},"STROPPA":{pct:70,note:"70/30"},
   "TACCONI":{pct:70,note:"70/30"},"VITALE":{pct:60,note:"60%"},
   "ZANARDI":{pct:70,note:"70%"},"ZANINETTI":{pct:65,note:"65%"},
@@ -607,6 +607,21 @@ function demo(){
     {cognome:'MONESTIER',prestazioni:47,fatturato:6110,sede:'RG'},
     {cognome:'LENTI',prestazioni:14,fatturato:1820,sede:'RG'},
     {cognome:'MURGIA',prestazioni:13,fatturato:1690,sede:'RG'},
+    // Ginecologhe con quota mista (demo)
+    {cognome:'SARAIS',prestazioni:12,fatturato:1950,sede:'RG',dettaglio:[
+      {desc:'Visita ginecologica',imp:150},{desc:'Visita ginecologica di controllo',imp:100},
+      {desc:'Tampone vaginale',imp:50},{desc:'Tampone cervicale',imp:50},
+      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
+      {desc:'Colposcopia',imp:200},{desc:'Visita ginecologica',imp:150},
+      {desc:'Tampone cervicale',imp:50},{desc:'Visita ginecologica di controllo',imp:100},
+      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
+    ]},
+    {cognome:'CALCAGNI',prestazioni:8,fatturato:1100,sede:'RG',dettaglio:[
+      {desc:'Visita ginecologica',imp:150},{desc:'Tampone vaginale',imp:50},
+      {desc:'Visita ginecologica di controllo',imp:100},{desc:'Tampone cervicale',imp:50},
+      {desc:'Colposcopia',imp:200},{desc:'Tampone vaginale',imp:50},
+      {desc:'Visita ginecologica',imp:150},{desc:'Tampone cervicale',imp:50},
+    ]},
   ];
   S.zara=[
     {cognome:'MEAZZA',prestazioni:133,fatturato:19100,sede:'ZARA'},
@@ -643,13 +658,30 @@ function elabora(){
     map[f.cognome].sedi.push(f.sede);
   });
   S.risultati=[];
+  // Aggiungo dettaglio prestazioni al map (per ginecologhe)
+  [...S.rg,...S.zara].forEach(f=>{
+    if(f.dettaglio && map[f.cognome]){
+      if(!map[f.cognome].dettaglio) map[f.cognome].dettaglio=[];
+      map[f.cognome].dettaglio.push(...f.dettaglio);
+    }
+  });
   Object.keys(map).forEach(cog=>{
     const d=map[cog];
     const q=DB[cog]||{pct:70,note:'70% (default)'};
     let lordo=0;
-    if(q.fisso)lordo=d.prestazioni*q.fisso;
-    else if(q.pct)lordo=d.fatturato*q.pct/100;
-    else lordo=d.fatturato*0.70;
+    if(q.tipo==='ginecologa' && d.dettaglio){
+      // Ginecologhe: % sulla visita + €15 fisso sui tamponi
+      const imp_tamponi = d.dettaglio.filter(r=>r.desc.toLowerCase().includes('tampone')).reduce((s,r)=>s+r.imp,0);
+      const n_tamponi = d.dettaglio.filter(r=>r.desc.toLowerCase().includes('tampone')).length;
+      const imp_visite = d.fatturato - imp_tamponi;
+      lordo = (imp_visite * q.pct/100) + (n_tamponi * q.fisso_tampone);
+    } else if(q.fisso){
+      lordo=d.prestazioni*q.fisso;
+    } else if(q.pct){
+      lordo=d.fatturato*q.pct/100;
+    } else {
+      lordo=d.fatturato*0.70;
+    }
     const pp=(S.portali[cog]||[]);
     // Logica corretta:
     // detrazione = imponibile_fattura (escluso bollo) × 6% × 1.22
@@ -710,11 +742,20 @@ function renderVerifica(mese,anno){
       <div class="mc-body" id="mcb-${i}">
         <div class="mc-amounts">
           <div class="ma"><div class="ma-label">Fatturato</div><div class="ma-val">€${fmt(r.d.fatturato)}</div></div>
-          <div class="ma"><div class="ma-label">Compenso lordo</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
+          <div class="ma"><div class="ma-label">Compenso lordo${r.q.tipo==='ginecologa'?' <span style="font-size:10px;color:var(--amber)">(misto)</span>':''}</div><div class="ma-val td-blue">€${fmt(r.lordo)}</div></div>
           <div class="ma"><div class="ma-label">Det. portali</div><div class="ma-val td-amber">−€${fmt(r.det)}</div></div>
           <div class="ma"><div class="ma-label">Ritenuta 20%</div><div class="ma-val td-red">−€${fmt(r.ritenuta)}</div></div>
           <div class="ma"><div class="ma-label">Netto</div><div class="ma-val td-green">€${fmt(r.netto)}</div></div>
         </div>
+        ${r.q.tipo==='ginecologa' && r.d.dettaglio ? (()=>{
+          const nTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).length;
+          const impTamp = r.d.dettaglio.filter(p=>p.desc.toLowerCase().includes('tampone')).reduce((s,p)=>s+p.imp,0);
+          const impVisite = r.d.fatturato - impTamp;
+          return nTamp>0 ? \`<div class="alert a-info" style="margin-bottom:12px;font-size:12px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>Calcolo misto: visite €\${fmt(impVisite)} × \${r.q.pct}% = <strong>€\${fmt(impVisite*r.q.pct/100)}</strong> + \${nTamp} tamponi × €15 = <strong>€\${fmt(nTamp*15)}</strong></div>
+          </div>\` : '';
+        })() : ''}
         ${r.n_portali>0?`
         <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
         <div class="tbl-wrap"><table>
