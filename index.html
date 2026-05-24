@@ -862,7 +862,7 @@ function qeSalvaSingolo(cog){
 }
 
 function qeElimina(cog){
-  if(!confirm('Eliminare '+cog+' dall'anagrafica?')) return;
+  if(!confirm('Eliminare '+cog+" dall'anagrafica?")) return;
   delete QE_DB[cog];
   qeSave();
   qeRender();
