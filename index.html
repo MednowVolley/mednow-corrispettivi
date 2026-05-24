@@ -356,16 +356,16 @@ input[type=file]{display:none}
         </div>
         <div class="alert a-warn" style="margin-bottom:14px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div>Per ogni prenotazione da <strong>iDoctors, Davinci, Doctolib, CupSolidale</strong>: detrazione <strong>6% + IVA 22% = 7,32%</strong> sul compenso del medico</div>
+          <div>Per ogni prenotazione da <strong>iDoctors, Davinci, Doctolib, CupSolidale</strong>: si calcola <strong>6% + IVA 22% = 7,32% sull'imponibile della fattura</strong> (totale − bollo), e si sottrae dal compenso medico lordo</div>
         </div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>Portale</th><th>Detrazione</th><th>IVA 22%</th><th>Totale sul compenso</th><th>Esempio su €100</th></tr></thead>
             <tbody>
-              <tr><td><span class="badge b-blue">iDoctors</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
-              <tr><td><span class="badge b-blue">Davinci / Elty</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
-              <tr><td><span class="badge b-blue">Doctolib</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
-              <tr><td><span class="badge b-blue">CupSolidale</span></td><td>6%</td><td>+1,32%</td><td class="td-red">−7,32%</td><td class="td-r">€92,68</td></tr>
+              <tr><td><span class="badge b-blue">iDoctors</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
+              <tr><td><span class="badge b-blue">Davinci / Elty</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
+              <tr><td><span class="badge b-blue">Doctolib</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
+              <tr><td><span class="badge b-blue">CupSolidale</span></td><td>6% su imp. fattura</td><td>+1,32%</td><td class="td-red">−7,32% imp.</td><td class="td-r">es. €100 → det. €7,32</td></tr>
             </tbody>
           </table>
         </div>
@@ -526,9 +526,10 @@ function demo(){
     {cognome:'MONESTIER',prestazioni:177,fatturato:23010,sede:'ZARA'},
   ];
   S.portali={
-    'MEAZZA':[{paziente:'Marco Montoli',data:'08/01',importo:150,portale:'iDoctors'},{paziente:'Matteo Lazzari',data:'15/01',importo:150,portale:'iDoctors'}],
-    'MONESTIER':[{paziente:'Paolo Bottio',data:'13/01',importo:130,portale:'iDoctors'},{paziente:'Zahara Karim',data:'20/01',importo:130,portale:'iDoctors'}],
-    'MURARI':[{paziente:'Natalia Biart',data:'07/01',importo:150,portale:'iDoctors'}],
+    // imponibile = totale fattura - bollo (es. 152-2=150, 132-2=130)
+    'MEAZZA':[{paziente:'Marco Montoli',data:'08/01',importo:152,imponibile:150,portale:'iDoctors'},{paziente:'Matteo Lazzari',data:'15/01',importo:152,imponibile:150,portale:'iDoctors'}],
+    'MONESTIER':[{paziente:'Paolo Bottio',data:'13/01',importo:132,imponibile:130,portale:'iDoctors'},{paziente:'Zahara Karim',data:'20/01',importo:132,imponibile:130,portale:'iDoctors'}],
+    'MURARI':[{paziente:'Natalia Biart',data:'07/01',importo:152,imponibile:150,portale:'iDoctors'}],
   };
   ['dz-rg','dz-zara','dz-idoc'].forEach(id=>{
     document.getElementById(id).classList.add('loaded');
@@ -558,12 +559,15 @@ function elabora(){
     else if(q.pct)lordo=d.fatturato*q.pct/100;
     else lordo=d.fatturato*0.70;
     const pp=(S.portali[cog]||[]);
-    let imp_portali=0;
+    // Logica corretta:
+    // detrazione = imponibile_fattura (escluso bollo) × 6% × 1.22
+    // sottratta dal compenso medico lordo
+    let det_tot=0;
     pp.forEach(p=>{
-      const cp=q.pct?p.importo*q.pct/100:(q.fisso||p.importo*0.70);
-      imp_portali+=cp;
+      const imp_fatt = p.imponibile||p.importo; // imponibile fattura senza bollo
+      det_tot += imp_fatt * DET;
     });
-    const det=imp_portali*DET;
+    const det=det_tot;
     const imponibile=lordo-det;
     const ritenuta=imponibile*RIT;
     const netto=imponibile-ritenuta;
@@ -622,10 +626,12 @@ function renderVerifica(mese,anno){
         ${r.n_portali>0?`
         <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prenotazioni portali</div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Paziente</th><th>Data</th><th>Importo</th><th>Portale</th><th class="td-r">Compenso</th><th class="td-r">Detrazione</th></tr></thead>
+          <thead><tr><th>Paziente</th><th>Data</th><th>Imp. fattura</th><th>Portale</th><th class="td-r">Compenso medico</th><th class="td-r">Detrazione (7,32%)</th></tr></thead>
           <tbody>${r.pp.map(p=>{
-            const cp=r.q.pct?p.importo*r.q.pct/100:(r.q.fisso||p.importo*.70);
-            return`<tr><td>${p.paziente}</td><td>${p.data}</td><td class="td-r">€${fmt(p.importo)}</td><td><span class="badge b-blue">${p.portale}</span></td><td class="td-r">€${fmt(cp)}</td><td class="td-r td-red">−€${fmt(cp*DET)}</td></tr>`;
+            const imp_fatt=p.imponibile||p.importo;
+            const det_riga=imp_fatt*DET;
+            const cp=r.q.pct?imp_fatt*r.q.pct/100:(r.q.fisso||imp_fatt*.70);
+            return`<tr><td>${p.paziente}</td><td>${p.data}</td><td class="td-r">€${fmt(imp_fatt)}</td><td><span class="badge b-blue">${p.portale}</span></td><td class="td-r">€${fmt(cp)}</td><td class="td-r td-red">−€${fmt(det_riga)}</td></tr>`;
           }).join('')}</tbody>
         </table></div>`:'<div style="font-size:12px;color:var(--text3)">Nessuna prenotazione da portali.</div>'}
       </div>
@@ -656,7 +662,7 @@ function renderCorrispettivi(mese,anno){
       <div class="cc-body">
         <div class="cc-row"><span class="cc-label">Totale prestazioni fatturate</span><span class="cc-val">€${fmt(r.d.fatturato)}</span></div>
         <div class="cc-row"><span class="cc-label">Compenso lordo (${r.q.note})</span><span class="cc-val td-blue">€${fmt(r.lordo)}</span></div>
-        ${r.n_portali>0?`<div class="cc-row"><span class="cc-label">Detrazione portali — ${r.n_portali} prest. (6% + IVA 22%)</span><span class="cc-val td-amber">−€${fmt(r.det)}</span></div>`:''}
+        ${r.n_portali>0?`<div class="cc-row"><span class="cc-label">Detrazione portali — ${r.n_portali} prest. (6%+IVA sul totale fattura)</span><span class="cc-val td-amber">−€${fmt(r.det)}</span></div>`:''}
         <div class="cc-row"><span class="cc-label">Imponibile</span><span class="cc-val">€${fmt(r.imponibile)}</span></div>
         <div class="cc-row"><span class="cc-label">Ritenuta d'acconto 20%</span><span class="cc-val td-red">−€${fmt(r.ritenuta)}</span></div>
         <div class="cc-row cc-total"><span class="cc-label">Netto da corrispondere</span><span class="cc-val td-green">€${fmt(r.netto)}</span></div>
