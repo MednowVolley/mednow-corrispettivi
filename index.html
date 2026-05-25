@@ -1028,11 +1028,10 @@ function parseQuoteCSV(csv){
 }
 
 function qeInitLocal(){
-  try {
-    var saved = localStorage.getItem(QE_KEY);
-    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
-    Object.assign(DB, QE_DB);
-  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
+  // Usa sempre DB_DEFAULT (hardcoded) come base sicura
+  // Il localStorage potrebbe avere versioni obsolete
+  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
+  Object.assign(DB, QE_DB);
   var tb = document.getElementById('qe-tbody');
   if(tb) qeRender();
 }
