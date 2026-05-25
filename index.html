@@ -984,7 +984,7 @@ function qeInit(){
     QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
     Object.assign(DB, QE_DB);
   } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
-  qeRender();
+  // Non chiamare qeRender() subito — solo quando la pagina è aperta
 }
 
 function qeSave(){
@@ -1100,10 +1100,21 @@ function renderQuote(){
   if(!QE_DB) qeInit(); else qeRender();
 }
 
+// Carica QE_DB al boot (senza render DOM)
 if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",qeInit);
+  document.addEventListener("DOMContentLoaded", function(){
+    try {
+      const saved = localStorage.getItem(QE_KEY);
+      QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
+      Object.assign(DB, QE_DB);
+    } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
+  });
 } else {
-  qeInit();
+  try {
+    const saved = localStorage.getItem(QE_KEY);
+    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
+    Object.assign(DB, QE_DB);
+  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
 }
 </script>
 </body>
