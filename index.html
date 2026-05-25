@@ -678,7 +678,30 @@ function elabora(){
           // 1. Match esatto paziente+data
           if(S.xmlIndex[keyExact]){
             const candidates = S.xmlIndex[keyExact];
-            xmlMatch = candidates.find(x=>!x.cognomeMedico||x.cognomeMedico===cog)||candidates[0];
+            if(candidates.length === 1){
+              // Una sola fattura → match diretto
+              xmlMatch = candidates[0];
+            } else {
+              // Più fatture stesso paziente+data → usa il cognome medico nella descrizione
+              xmlMatch = candidates.find(x=>x.cognomeMedico===cog);
+              if(!xmlMatch){
+                // Fallback: usa gestionale per trovare il tipo visita del medico
+                const gestEntry = S.gestionale[keyExact] ? S.gestionale[keyExact].find(g=>g.cognomeMedico===cog) : null;
+                if(gestEntry){
+                  // Cerca la fattura XML con descrizione più simile al tipo visita del gestionale
+                  const tipoNorm = gestEntry.tipo.toUpperCase().replace(/[^A-Z ]/g,'').trim();
+                  const tipoWords = tipoNorm.split(' ').filter(w=>w.length>3);
+                  xmlMatch = candidates.find(function(x){
+                    const descUp = x.desc.toUpperCase();
+                    return tipoWords.some(w=>descUp.includes(w));
+                  });
+                }
+              }
+              // Se ancora nessun match, prendi quella con importo più alto (non fisioterapia/podologia)
+              if(!xmlMatch){
+                xmlMatch = candidates.reduce((best,x)=>x.imp>best.imp?x:best, candidates[0]);
+              }
+            }
           }
 
           // 2. Match parziale: prima parola cognome + data
