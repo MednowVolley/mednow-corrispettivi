@@ -453,7 +453,8 @@ function parseXMLFattura(xmlStr, sede){
     const cogPaz = g('CessionarioCommittente Cognome');
     const paziente = (cogPaz+' '+nomePaz).trim();
 
-    let imp=0, desc='', cognomeMedico='';
+    // Raccoglie TUTTE le righe della fattura (escluso bollo)
+    const righeLinee = [];
     doc.querySelectorAll('DettaglioLinee').forEach(linea=>{
       const nat = linea.querySelector('Natura');
       if(nat && nat.textContent.trim()==='N1') return;
@@ -462,13 +463,24 @@ function parseXMLFattura(xmlStr, sede){
       if(!d) return;
       const descTxt = d.textContent.trim();
       if(descTxt.toUpperCase().includes('BOLLO')) return;
-      desc = descTxt;
-      imp = parseFloat((p?p.textContent:'0').replace(',','.'))||0;
-      cognomeMedico = estraiCognomeMedico(descTxt);
+      const prezzoVal = parseFloat((p?p.textContent:'0').replace(',','.'))||0;
+      if(prezzoVal <= 0) return;
+      righeLinee.push({desc:descTxt, imp:prezzoVal});
     });
 
+    if(righeLinee.length === 0) return null;
+
+    // Usa la prima riga per cognome medico e descrizione principale
+    const descPrincipale = righeLinee[0].desc;
+    const cognomeMedico = estraiCognomeMedico(descPrincipale) ||
+      righeLinee.map(r=>estraiCognomeMedico(r.desc)).find(c=>c) || '';
+
+    // Importo totale = somma di tutte le righe
+    const imp = righeLinee.reduce((s,r)=>s+r.imp, 0);
+    const desc = descPrincipale;
+
     const key = normStr(paziente)+'|'+data;
-    return {key, paziente, data, desc, imp, cognomeMedico, sede};
+    return {key, paziente, data, desc, imp, cognomeMedico, sede, righeLinee};
   }catch(e){return null;}
 }
 
