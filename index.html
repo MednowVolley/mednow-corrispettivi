@@ -337,7 +337,9 @@ const fmtK = n => Math.round(n).toLocaleString('it-IT');
 
 function normStr(s){
   return String(s||'').toLowerCase().trim()
-    .replace(/dr\.?s?\.?\s*/i,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+    .replace(/^dr\.?s?\.?\s*/i,'')  // rimuove "dr." solo a INIZIO
+    .replace(/[^a-z0-9 ]/g,'')
+    .replace(/\s+/g,' ').trim();
 }
 function normDate(s){
   var d = String(s||'').trim().replace(/\s.*$/,'').trim();
