@@ -193,6 +193,10 @@ tr:hover td{background:var(--surface2)}
   <div class="topbar">
     <div class="topbar-title" id="tb-title">Carica file mensili</div>
     <div class="topbar-right">
+      <button class="btn btn-sm" onclick="driveAuth()" id="btn-drive" title="Connetti Google Drive per sincronizzare le quote">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span id="drive-status">Drive</span>
+      </button>
       <select id="sel-mese">
         <option value="1">Gennaio</option><option value="2">Febbraio</option>
         <option value="3">Marzo</option><option value="4">Aprile</option>
@@ -986,18 +990,83 @@ let QE_DB = null;
 const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
 
 function qeInit(){
+  // Carica da Drive (fonte primaria) → fallback localStorage → fallback DB default
+  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
+  fetch('https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media', {
+    headers: {'Authorization': 'Bearer ' + (window.GAPI_TOKEN||'')}
+  })
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    if(data && typeof data === 'object' && Object.keys(data).length > 0){
+      QE_DB = data;
+      try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
+      Object.assign(DB, QE_DB);
+      toast('Quote caricate da Drive');
+    } else {
+      qeInitLocal();
+    }
+  })
+  .catch(() => qeInitLocal());
+}
+
+function qeInitLocal(){
   try {
     const saved = localStorage.getItem(QE_KEY);
     QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
     Object.assign(DB, QE_DB);
   } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
-  // Non chiamare qeRender() subito — solo quando la pagina è aperta
 }
 
 function qeSave(){
   try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
   Object.assign(DB, QE_DB);
-  toast('Quote salvate');
+  // Salva su Drive
+  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
+  const body = JSON.stringify(QE_DB, null, 2);
+  fetch('https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=media', {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + (window.GAPI_TOKEN||''),
+      'Content-Type': 'application/json'
+    },
+    body: body
+  })
+  .then(r => {
+    if(r.ok){ toast('Quote salvate su Drive ✓'); }
+    else { toast('Salvate in locale (Drive non disponibile)'); }
+  })
+  .catch(() => toast('Salvate in locale'));
+}
+
+function driveAuth(){
+  // Usa Google Identity Services per ottenere token
+  if(typeof google === 'undefined' || !google.accounts){
+    toast('Caricamento Google Auth...');
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => driveAuthExec();
+    document.head.appendChild(s);
+  } else {
+    driveAuthExec();
+  }
+}
+
+function driveAuthExec(){
+  if(typeof google === 'undefined') { toast('Google Auth non disponibile'); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: '241111319429-ks4t9hpa58n3mde7g8f7vn4h9e7dk6dk.apps.googleusercontent.com',
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: (resp) => {
+      if(resp.access_token){
+        window.GAPI_TOKEN = resp.access_token;
+        document.getElementById('drive-status').textContent = '✓ Drive';
+        document.getElementById('btn-drive').classList.add('btn-p');
+        toast('Drive connesso — ricarico quote...');
+        qeInit();
+      }
+    }
+  });
+  client.requestAccessToken();
 }
 
 function qeReset(){
@@ -1108,20 +1177,11 @@ function renderQuote(){
 }
 
 // Carica QE_DB al boot (senza render DOM)
+// Carica quote al boot da localStorage (Drive richiede auth esplicita)
 if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded", function(){
-    try {
-      const saved = localStorage.getItem(QE_KEY);
-      QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
-      Object.assign(DB, QE_DB);
-    } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
-  });
+  document.addEventListener("DOMContentLoaded", qeInitLocal);
 } else {
-  try {
-    const saved = localStorage.getItem(QE_KEY);
-    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
-    Object.assign(DB, QE_DB);
-  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
+  qeInitLocal();
 }
 </script>
 </body>
