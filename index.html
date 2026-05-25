@@ -340,7 +340,14 @@ function normStr(s){
     .replace(/dr\.?s?\.?\s*/i,'').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
 }
 function normDate(s){
-  return String(s||'').trim().replace(/\s.*$/,'').trim();
+  var d = String(s||'').trim().replace(/\s.*$/,'').trim();
+  // Converti DD/MM/YYYY → YYYY-MM-DD
+  var m1 = d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m1) return m1[3]+'-'+m1[2].padStart(2,'0')+'-'+m1[1].padStart(2,'0');
+  // Converti DD-MM-YYYY → YYYY-MM-DD
+  var m2 = d.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if(m2) return m2[1]+'-'+m2[2].padStart(2,'0')+'-'+m2[3].padStart(2,'0');
+  return d;
 }
 
 function isTampone(desc){
@@ -659,38 +666,38 @@ function elabora(){
         sede.righe.forEach(riga=>{
           const keyNorm = normStr(riga.paziente)+'|'+normDate(riga.data).replace(/\//g,'-').replace(/^(\d{2})-(\d{2})-(\d{4})$/,'$3-$2-$1');
           // Prova vari formati data
-          const dataVariants = [
-            normDate(riga.data),
-            normDate(riga.data).replace(/\//g,'-'),
-            normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3-$2-$1'),
-            normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3/$2/$1'),
-          ];
+          // normDate normalizza tutto a YYYY-MM-DD
+          const dataNorm = normDate(riga.data);
+          const pazNorm = normStr(riga.paziente);
+          const keyExact = pazNorm+'|'+dataNorm;
 
           let xmlMatch = null;
-          const pazNorm = normStr(riga.paziente);
 
-          // Cerca nell'xmlIndex con vari formati data
-          for(const dv of dataVariants){
-            const k = pazNorm+'|'+dv;
-            if(S.xmlIndex[k]){
-              const candidates = S.xmlIndex[k];
-              xmlMatch = candidates.find(x=>!x.cognomeMedico||x.cognomeMedico===cog)||candidates[0];
-              break;
+          // 1. Match esatto paziente+data
+          if(S.xmlIndex[keyExact]){
+            const candidates = S.xmlIndex[keyExact];
+            xmlMatch = candidates.find(x=>!x.cognomeMedico||x.cognomeMedico===cog)||candidates[0];
+          }
+
+          // 2. Match parziale: prima parola cognome + data
+          if(!xmlMatch){
+            const primaParola = pazNorm.split(' ')[0];
+            if(primaParola.length>2){
+              const found = Object.keys(S.xmlIndex).find(k=>k.endsWith('|'+dataNorm)&&k.startsWith(primaParola));
+              if(found){
+                const candidates = S.xmlIndex[found];
+                xmlMatch = candidates.find(x=>!x.cognomeMedico||x.cognomeMedico===cog)||candidates[0];
+              }
             }
           }
 
-          // Se non trovato, prova con gestionale
-          if(!xmlMatch){
-            for(const dv of dataVariants){
-              const k = pazNorm+'|'+dv;
-              if(S.gestionale[k]){
-                const gm = S.gestionale[k].find(g=>g.cognomeMedico===cog);
-                if(gm){
-                  // Cerca XML solo per data
-                  const xmlPerData = Object.keys(S.xmlIndex).filter(k2=>k2.endsWith('|'+dv));
-                  if(xmlPerData.length>0) xmlMatch = S.xmlIndex[xmlPerData[0]][0];
-                }
-                break;
+          // 3. Match via gestionale (paziente+data → medico → XML)
+          if(!xmlMatch && S.gestionale[keyExact]){
+            const gm = S.gestionale[keyExact].find(g=>g.cognomeMedico===cog);
+            if(gm){
+              const xmlPerData = Object.keys(S.xmlIndex).filter(k2=>k2.endsWith('|'+dataNorm));
+              if(xmlPerData.length>0){
+                xmlMatch = S.xmlIndex[xmlPerData[0]][0];
               }
             }
           }
@@ -703,9 +710,8 @@ function elabora(){
           const pazWords = pazNorm.split(' ').filter(w=>w.length>2);
           for(const p of S.idoctors){
             if(p.cognomeMedico!==cog) continue;
-            const pDate = normDate(p.data).replace(/\//g,'-');
-            const matchData = dataVariants.some(dv=>dv===pDate||dv.replace(/\//g,'-')===pDate);
-            if(!matchData) continue;
+            const pDate = normDate(p.data); // già normalizzato a YYYY-MM-DD
+            if(pDate!==dataNorm) continue;
             const pNorm = normStr(p.paziente).split(' ').filter(w=>w.length>2);
             if(pazWords.some(w=>pNorm.includes(w))){
               isPortale=true;
