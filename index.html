@@ -392,6 +392,8 @@ function goTo(el, id){
   if(pg) pg.classList.add('on');
   const tb = document.getElementById('tb-title');
   if(tb) tb.textContent = TITLES[id]||id;
+  // Inizializza editor quote quando si apre la pagina
+  if(id==='quote'){ if(!QE_DB) qeInit(); else qeRender(); }
 }
 
 // ── DROP ZONE ──────────────────────────────────────────────
@@ -946,6 +948,13 @@ function renderQuote(){
   tb.innerHTML=Object.entries(DB).map(([c,q])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>').join('');
 }
 renderQuote();
+
+// Init al caricamento
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", qeInit);
+} else {
+  qeInit();
+}
 </script>
 </body>
 </html>
