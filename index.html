@@ -778,7 +778,9 @@ function elabora(){
           }
 
           const impFattura = xmlMatch ? xmlMatch.imp : 0;
-          const compBase = impFattura>0 ? calcComp(q, impFattura, riga.desc) : riga.imp;
+          // Se XML trovato: calcola quota sull'imponibile XML
+          // Se XML non trovato: usa compenso XLS direttamente (già corretto per tipo prestazione)
+          const compBase = impFattura>0 ? calcComp(q, impFattura, xmlMatch ? xmlMatch.desc : riga.desc) : riga.imp;
 
           // Match portale
           let isPortale=false, impPortale=0, detrazione=0;
