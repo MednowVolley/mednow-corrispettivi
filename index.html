@@ -327,7 +327,7 @@ const RIT = 0.20;
 const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
 const DB = {
-  ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,note:'70%'},
+  ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,fisso_eco:50,tipo:'misto',note:'70% visite, €50 eco'},
   ADINOLFI:{pct:70,note:'70%'},ALESSI:{pct:70,note:'70%'},
   ALGERI:{pct:80,note:'80%'},ANGILLETTA:{pct:70,note:'70%'},
   BONO:{pct:60,note:'60%'},BUONAIUTO:{fisso:105,note:'€105 vis €50 eco'},
@@ -403,6 +403,13 @@ function estraiCognomeMedico(desc){
 
 function calcComp(q, imp, desc){
   if(q.tipo==='gin' && isTampone(desc)) return q.fisso_t||15;
+  if(q.tipo==='misto'){
+    const d = desc.toUpperCase();
+    if(d.includes('ECO')||d.includes('ECODOPPLER')||d.includes('ECOGRAFIA')||d.includes('ECOCOLORDOPPLER')){
+      return q.fisso_eco||50;
+    }
+    return q.pct ? imp*q.pct/100 : imp*0.7;
+  }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
   return imp * 0.5;
