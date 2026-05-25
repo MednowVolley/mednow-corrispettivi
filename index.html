@@ -147,16 +147,6 @@ tr:hover td{background:var(--surface2)}
 .toast.show{opacity:1}
 
 /* PRINT */
-.qe-row.qe-modified td{background:rgba(24,95,165,.05)!important}
-.qe-row.qe-modified td:first-child{border-left:2px solid var(--blue)!important}
-.qe-save{padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--green);background:var(--green-dim);color:var(--green);font-family:var(--font)}
-.qe-save:hover{background:var(--green);color:#fff}
-.qe-del{padding:3px 7px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-family:var(--font)}
-.qe-del:hover{border-color:var(--red);color:var(--red)}
-.qe-sel{padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:var(--font)}
-.qe-inp{width:65px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right;font-family:var(--mono)}
-.qe-note-inp{width:100%;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:var(--font)}
-.qe-sel:focus,.qe-inp:focus,.qe-note-inp:focus{border-color:var(--blue);outline:none}
 @media print{
   .sb,.topbar,.doc-actions,.btn-row,select{display:none!important}
   .main,.content,.page{overflow:visible!important}
@@ -193,10 +183,6 @@ tr:hover td{background:var(--surface2)}
   <div class="topbar">
     <div class="topbar-title" id="tb-title">Carica file mensili</div>
     <div class="topbar-right">
-      <button class="btn btn-sm" onclick="qeInit();toast('Ricarico quote...')" id="btn-drive" title="Ricarica quote dal Google Sheet">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        <span id="drive-status">Quote</span>
-      </button>
       <select id="sel-mese">
         <option value="1">Gennaio</option><option value="2">Febbraio</option>
         <option value="3">Marzo</option><option value="4">Aprile</option>
@@ -277,42 +263,12 @@ tr:hover td{background:var(--surface2)}
     <!-- QUOTE -->
     <div id="page-quote" class="page">
       <div class="card">
-        <div class="card-title" style="justify-content:space-between">
-          <span>Quote medici</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <a href="https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/edit" target="_blank" class="btn btn-sm" style="text-decoration:none" title="Modifica quote su Google Sheet">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Modifica Sheet
-            </a>
-            <button class="btn btn-p btn-sm" onclick="qeSalvaTutti()">Salva tutto</button>
-            <button class="btn btn-sm" onclick="qeReset()">Reset</button>
-          </div>
-        </div>
-        <div class="alert a-info" style="margin-bottom:12px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div>Le quote vengono caricate automaticamente dal <a href="https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/edit" target="_blank" style="color:var(--blue);font-weight:600">Google Sheet</a> ad ogni elaborazione. Per modificare una quota in modo permanente, modifica direttamente lo Sheet.</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <input id="qe-search" type="text" placeholder="Cerca medico..." style="flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font)" oninput="qeRender()">
-          <select id="qe-filter" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font)" onchange="qeRender()">
-            <option value="">Tutti</option>
-            <option value="pct">Percentuale</option>
-            <option value="fisso">Fisso</option>
-          </select>
-          <span id="qe-count" style="font-size:12px;color:var(--text3)"></span>
-        </div>
+        <div class="card-title">Quote medici (da anagrafica)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Cognome</th><th>Tipo</th><th style="width:80px">Valore</th><th>Note</th><th style="width:100px">Azioni</th></tr></thead>
-            <tbody id="qe-tbody"></tbody>
+            <thead><tr><th>Cognome</th><th>Accordo</th><th>Tipo</th></tr></thead>
+            <tbody id="quote-tbody"></tbody>
           </table>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Cognome</div><input type="text" id="qa-cog" placeholder="ROSSI" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font);text-transform:uppercase"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Tipo</div><select id="qa-tipo" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"><option value="pct">% Percentuale</option><option value="fisso">€ Fisso</option></select></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Valore</div><input type="number" id="qa-val" placeholder="70" min="0" step="0.5" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Note</div><input type="text" id="qa-note" placeholder="es. 70/30" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">&nbsp;</div><button class="btn btn-p btn-sm" onclick="qeAggiungi()">+ Aggiungi</button></div>
         </div>
       </div>
     </div>
@@ -322,7 +278,7 @@ tr:hover td{background:var(--surface2)}
 </div>
 <div class="toast" id="toast"></div>
 
-<scr
+<script>
 // ── STATO ──────────────────────────────────────────────────
 const S = {
   xmlIndex: {},      // normPaz|normData → [{imp, desc, cognomeMedico}]
@@ -339,7 +295,7 @@ const RIT = 0.20;
 const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
 const DB = {
-  ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,fisso_eco:50,tipo:'misto',note:'70% visite, €50 eco'},
+  ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,note:'70%'},
   ADINOLFI:{pct:70,note:'70%'},ALESSI:{pct:70,note:'70%'},
   ALGERI:{pct:80,note:'80%'},ANGILLETTA:{pct:70,note:'70%'},
   BONO:{pct:60,note:'60%'},BUONAIUTO:{fisso:105,note:'€105 vis €50 eco'},
@@ -415,13 +371,6 @@ function estraiCognomeMedico(desc){
 
 function calcComp(q, imp, desc){
   if(q.tipo==='gin' && isTampone(desc)) return q.fisso_t||15;
-  if(q.tipo==='misto'){
-    const d = desc.toUpperCase();
-    if(d.includes('ECO')||d.includes('ECODOPPLER')||d.includes('ECOGRAFIA')||d.includes('ECOCOLORDOPPLER')){
-      return q.fisso_eco||50;
-    }
-    return q.pct ? imp*q.pct/100 : imp*0.7;
-  }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
   return imp * 0.5;
@@ -992,188 +941,19 @@ function copia(cog,lordo,det,rit,netto){
   navigator.clipboard.writeText(t).then(()=>toast('Copiato'));
 }
 
-// ── QUOTE EDITOR ENGINE ────────────────────────────────────
-const QE_KEY = 'mednow_quote_v2';
-let QE_DB = null;
-const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
-
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/pub?output=csv';
-
-function qeInit(){
-  // Carica dal Google Sheet pubblico CSV
-  fetch(SHEET_CSV_URL)
-    .then(r => r.ok ? r.text() : null)
-    .then(csv => {
-      if(csv){
-        const db = parseQuoteCSV(csv);
-        if(Object.keys(db).length > 0){
-          QE_DB = db;
-          try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
-          Object.assign(DB, QE_DB);
-          const btn = document.getElementById('drive-status');
-          if(btn) btn.textContent = '✓ Sheet';
-          return;
-        }
-      }
-      qeInitLocal();
-    })
-    .catch(() => qeInitLocal());
-}
-
-function parseQuoteCSV(csv){
-  const db = {};
-  const lines = csv.split('\n').slice(1); // salta header
-  lines.forEach(line => {
-    if(!line.trim()) return;
-    const cols = line.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
-    const cog = cols[0].toUpperCase();
-    if(!cog) return;
-    const tipo = cols[1];
-    const val = parseFloat(cols[2])||0;
-    const fisso_eco = parseFloat(cols[3])||0;
-    const fisso_t = parseFloat(cols[4])||0;
-    const tipo_spec = cols[5];
-    const note = cols[6]||'';
-    const entry = {note};
-    if(tipo==='pct') entry.pct = val;
-    else entry.fisso = val;
-    if(fisso_eco) entry.fisso_eco = fisso_eco;
-    if(fisso_t) entry.fisso_t = fisso_t;
-    if(tipo_spec) entry.tipo = tipo_spec;
-    db[cog] = entry;
-  });
-  return db;
-}
-
-function qeInitLocal(){
-  try {
-    const saved = localStorage.getItem(QE_KEY);
-    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
-    Object.assign(DB, QE_DB);
-  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
-}
-
-function qeSave(){
-  try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
-  Object.assign(DB, QE_DB);
-  toast('Quote salvate ✓ — ricorda di aggiornare anche il Google Sheet');
-}
-
-function qeReset(){
-  if(!confirm("Ripristinare le quote ai valori predefiniti?")) return;
-  try { localStorage.removeItem(QE_KEY); } catch(e){}
-  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
-  Object.assign(DB, QE_DB);
-  qeRender();
-  toast('Quote ripristinate');
-}
-
-function qeMark(el){
-  const tr = el.closest('tr');
-  if(tr) tr.classList.add('qe-modified');
-}
-
-function qeSalvaTutti(){
-  document.querySelectorAll('.qe-row').forEach(function(tr){
-    const cog = tr.getAttribute('data-cog');
-    if(!cog) return;
-    const tipo = tr.querySelector('.qe-sel').value;
-    const val = parseFloat(tr.querySelector('.qe-inp').value)||0;
-    const note = tr.querySelector('.qe-note').value.trim();
-    if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-    else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-    tr.classList.remove('qe-modified');
-  });
-  qeSave();
-}
-
-function qeSalvaSingolo(el){
-  const tr = el.closest ? el.closest('tr') : null;
-  if(!tr) return;
-  const cog = tr.getAttribute('data-cog');
-  const tipo = tr.querySelector('.qe-sel').value;
-  const val = parseFloat(tr.querySelector('.qe-inp').value)||0;
-  const note = tr.querySelector('.qe-note').value.trim();
-  if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-  else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-  qeSave();
-  tr.classList.remove('qe-modified');
-}
-
-function qeElimina(el){
-  const tr = el.closest ? el.closest('tr') : null;
-  const cog = tr ? tr.getAttribute('data-cog') : null;
-  if(!cog) return;
-  if(!confirm("Eliminare "+cog+"?")) return;
-  delete QE_DB[cog];
-  qeSave();
-  qeRender();
-}
-
-function qeAggiungi(){
-  const cogEl=document.getElementById('qa-cog');
-  const tipoEl=document.getElementById('qa-tipo');
-  const valEl=document.getElementById('qa-val');
-  const noteEl=document.getElementById('qa-note');
-  if(!cogEl||!valEl) return;
-  const cog=cogEl.value.toUpperCase().trim();
-  const tipo=tipoEl?tipoEl.value:'pct';
-  const val=parseFloat(valEl.value)||0;
-  const note=noteEl?noteEl.value.trim():'';
-  if(!cog){toast('Inserisci cognome');return;}
-  if(!val){toast('Inserisci valore');return;}
-  if(QE_DB[cog]){toast(cog+' esiste');return;}
-  if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-  else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-  qeSave();
-  cogEl.value=''; valEl.value=''; if(noteEl) noteEl.value='';
-  qeRender();
-}
-
-function qeRender(){
-  if(!QE_DB){qeInit();return;}
-  const searchEl=document.getElementById('qe-search');
-  const filterEl=document.getElementById('qe-filter');
-  const search=searchEl?searchEl.value.toLowerCase():'';
-  const filtro=filterEl?filterEl.value:'';
-  const tb=document.getElementById('qe-tbody');
-  if(!tb) return;
-  const entries=Object.entries(QE_DB)
-    .filter(function(e){return(!search||e[0].toLowerCase().includes(search))&&(!filtro||(filtro==='pct'?e[1].pct:!e[1].pct));})
-    .sort(function(a,b){return a[0].localeCompare(b[0]);});
-  const cnt=document.getElementById('qe-count');
-  if(cnt) cnt.textContent=entries.length+' medici';
-  tb.innerHTML=entries.map(function(entry){
-    const c=entry[0],q=entry[1];
-    const isPct=!!q.pct;
-    const val=isPct?q.pct:(q.fisso||0);
-    return '<tr class="qe-row" data-cog="'+c+'">'
-      +'<td style="font-weight:600">'+c+'</td>'
-      +'<td><select class="qe-sel" onchange="qeMark(this)">'
-      +'<option value="pct"'+(isPct?' selected':'')+'>% Perc.</option>'
-      +'<option value="fisso"'+(!isPct?' selected':'')+'>€ Fisso</option>'
-      +'</select></td>'
-      +'<td><input type="number" class="qe-inp" value="'+val+'" min="0" step="0.5" oninput="qeMark(this)"></td>'
-      +'<td><input type="text" class="qe-note" value="'+(q.note||'').replace(/"/g,'&quot;')+'" oninput="qeMark(this)"></td>'
-      +'<td style="white-space:nowrap">'
-      +'<button class="qe-save" onclick="qeSalvaSingolo(this)">Salva</button>&nbsp;'
-      +'<button class="qe-del" onclick="qeElimina(this)">✕</button>'
-      +'</td></tr>';
-  }).join('');
-}
-
+// ── QUOTE TABLE ────────────────────────────────────────────
 function renderQuote(){
-  if(!QE_DB) qeInit(); else qeRender();
+  const tb=document.getElementById('quote-tbody');
+  if(!tb) return;
+  tb.innerHTML=Object.entries(DB).map(([c,q])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>').join('');
 }
+renderQuote();
 
-// Carica QE_DB al boot (senza render DOM)
-// Carica quote al boot da localStorage (Drive richiede auth esplicita)
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded", qeInitLocal);
+// Init al caricamento
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", qeInit);
 } else {
-  qeInitLocal();
-}
-;
+  qeInit();
 }
 </script>
 </body>
