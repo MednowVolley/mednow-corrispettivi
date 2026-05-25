@@ -983,31 +983,58 @@ let QE_DB = null;
 const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
 
 function qeInit(){
-  // Carica da Drive (fonte primaria) → fallback localStorage → fallback DB default
-  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
-  fetch('https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media', {
-    headers: {'Authorization': 'Bearer ' + (window.GAPI_TOKEN||'')}
-  })
-  .then(r => r.ok ? r.json() : null)
-  .then(data => {
-    if(data && typeof data === 'object' && Object.keys(data).length > 0){
-      QE_DB = data;
-      try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
-      Object.assign(DB, QE_DB);
-      toast('Quote caricate da Drive');
-    } else {
+  // Carica dal Google Sheet pubblico
+  fetch('https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/pub?output=csv')
+    .then(function(r){ return r.ok ? r.text() : null; })
+    .then(function(csv){
+      if(csv){
+        var db = parseQuoteCSV(csv);
+        if(Object.keys(db).length > 5){
+          QE_DB = db;
+          try{ localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); }catch(e){}
+          Object.assign(DB, QE_DB);
+          var tb = document.getElementById('qe-tbody');
+          if(tb) qeRender();
+          return;
+        }
+      }
       qeInitLocal();
-    }
-  })
-  .catch(() => qeInitLocal());
+    })
+    .catch(function(){ qeInitLocal(); });
+}
+
+function parseQuoteCSV(csv){
+  var db = {};
+  var lines = csv.split('\n').slice(1);
+  lines.forEach(function(line){
+    if(!line.trim()) return;
+    var cols = line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
+    var cog = (cols[0]||'').toUpperCase().trim();
+    if(!cog) return;
+    var tipo = cols[1]||'pct';
+    var val = parseFloat(cols[2])||0;
+    var fisso_eco = parseFloat(cols[3])||0;
+    var fisso_t = parseFloat(cols[4])||0;
+    var tipo_spec = (cols[5]||'').trim();
+    var note = (cols[6]||'').trim();
+    var entry = {note: note};
+    if(tipo === 'pct') entry.pct = val; else entry.fisso = val;
+    if(fisso_eco) entry.fisso_eco = fisso_eco;
+    if(fisso_t) entry.fisso_t = fisso_t;
+    if(tipo_spec) entry.tipo = tipo_spec;
+    db[cog] = entry;
+  });
+  return db;
 }
 
 function qeInitLocal(){
   try {
-    const saved = localStorage.getItem(QE_KEY);
+    var saved = localStorage.getItem(QE_KEY);
     QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
     Object.assign(DB, QE_DB);
   } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
+  var tb = document.getElementById('qe-tbody');
+  if(tb) qeRender();
 }
 
 function qeSave(){
