@@ -147,6 +147,8 @@ tr:hover td{background:var(--surface2)}
 .toast.show{opacity:1}
 
 /* PRINT */
+.tr-disc td{background:#FFF9E6!important;border-left:3px solid #F0AD00!important}
+.tr-miss td{background:#FDEDEC!important;border-left:3px solid #E74C3C!important}
 @media print{
   .sb,.topbar,.doc-actions,.btn-row,select{display:none!important}
   .main,.content,.page{overflow:visible!important}
@@ -296,17 +298,7 @@ tr:hover td{background:var(--surface2)}
           <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Tipo</div><select id="qa-tipo" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"><option value="pct">% Percentuale</option><option value="fisso">€ Fisso</option></select></div>
           <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Valore</div><input type="number" id="qa-val" placeholder="70" min="0" step="0.5" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
           <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Note</div><input type="text" id="qa-note" placeholder="es. 70/30" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">&nbsp;</div><button class="btn btn-p btn-sm" onclick="qeAggiungi()">+ Aggiungi</button></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-</div>
-<div class="toast" id="toast"></div>
-
-<script>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">&nbsp;</div><button class="btn btn-p bt
 
 // ── STATO ──────────────────────────────────────────────────
 const S = {
@@ -903,32 +895,69 @@ function renderVerifica(mese, anno){
 
 function renderTabellaRighe(r){
   if(!r.righeCalcolate||r.righeCalcolate.length===0) return '';
-  const righe = r.righeCalcolate.map(p=>{
-    let cls='', badge='', compStr='€'+fmt(p.compensoCorretto);
-    if(p.errore&&p.xmlTrovato){
-      cls='tr-err';
-      badge='<span class="badge b-warn" style="margin-left:4px">⚠ diff €'+fmt(Math.abs(p.xlsImp-p.compensoCorretto))+'</span>';
-      compStr='<span style="text-decoration:line-through;color:var(--red);font-size:11px">€'+fmt(p.xlsImp)+'</span> → <strong style="color:var(--green)">€'+fmt(p.compensoCorretto)+'</strong>';
-    } else if(p.isPortale&&p.detrazione>0){
-      cls='tr-err';
-      badge='<span class="badge b-warn" style="margin-left:4px">portale -€'+fmt(p.detrazione)+'</span>';
-    } else if(p.isPortale){
-      cls='tr-ok';
-      badge='<span class="badge b-ok" style="margin-left:4px">✓ portale</span>';
-    } else if(!p.xmlTrovato&&p.impFattura===0){
-      badge='<span class="badge b-warn" style="margin-left:4px">no XML</span>';
+
+  var missXML=[], discXLS=[];
+
+  var righe = r.righeCalcolate.map(function(p){
+    var impFatt = p.impFattura||0;
+    var compXLS = p.xlsComp||p.imp||0;
+    var compCorr = p.compensoCorretto!==undefined ? p.compensoCorretto : (p.compBase||compXLS);
+    var diff = Math.round((compCorr - compXLS)*100)/100;
+    var hasDiff = Math.abs(diff)>0.49;
+    var noXML = (!p.xmlTrovato && impFatt===0);
+
+    if(noXML){
+      missXML.push(p.paziente||p.data||'');
+    } else if(hasDiff){
+      discXLS.push((p.paziente||'')
+        +' <span>'+fmt(compXLS)+' → '+fmt(compCorr)
+        +(diff>0?' (+'+fmt(diff)+')':' ('+fmt(diff)+')')+'</span>');
     }
-    const impCell=p.impFattura>0?'€'+fmt(p.impFattura):'<span style="color:var(--text3)">—</span>';
-    return '<tr class="'+cls+'"><td>'+p.data+'</td><td>'+p.paziente+badge+'</td><td>'+p.desc+'</td><td class="tr-r">'+impCell+'</td><td class="tr-r">€'+fmt(p.xlsImp)+'</td><td class="tr-r">'+compStr+'</td></tr>';
+
+    var trCls = noXML ? 'tr-miss' : (hasDiff ? 'tr-disc' : '');
+    var impCell = impFatt>0 ? '€'+fmt(impFatt) : '<span style="color:#aaa">—</span>';
+    var diffCell = noXML
+      ? '<td style="color:#c0392b;font-weight:700">—</td>'
+      : hasDiff
+        ? '<td style="font-weight:700;color:'+(diff>0?'#c0392b':'#2d8a4e')+'">'+(diff>0?'+':'')+fmt(diff)+'</td>'
+        : '<td style="color:#2d8a4e">✓</td>';
+
+    return '<tr class="'+trCls+'">'
+      +'<td>'+(p.data||'')+'</td>'
+      +'<td>'+(p.paziente||'')+'</td>'
+      +'<td>'+impCell+'</td>'
+      +'<td style="text-align:right">€'+fmt(compXLS)+'</td>'
+      +'<td style="text-align:right;font-weight:'+(hasDiff?'700':'400')+'">€'+fmt(compCorr)+'</td>'
+      +diffCell
+      +'</tr>';
   }).join('');
 
-  const nErr=r.righeCalcolate.filter(p=>p.errore||p.isPortale&&p.detrazione>0).length;
-  const sum=nErr>0
-    ?'<div class="alert a-warn" style="margin-bottom:8px">⚠ '+nErr+' righe con compenso da correggere</div>'
-    :'<div class="alert a-ok" style="margin-bottom:8px">✓ Tutti i compensi corretti</div>';
+  // Box riepilogo discrepanze
+  var summary = '';
+  if(missXML.length){
+    summary += '<div style="background:#FDEDEC;border:2px solid #E74C3C;border-radius:8px;padding:10px 14px;margin-bottom:10px">'
+      +'<b style="color:#C0392B">❌ '+missXML.length+' fatture XML mancanti</b>'
+      +'<div style="font-size:12px;color:#C0392B;margin-top:4px">'+missXML.join(' · ')+'</div></div>';
+  }
+  if(discXLS.length){
+    summary += '<div style="background:#FFF3CD;border:2px solid #F0AD00;border-radius:8px;padding:10px 14px;margin-bottom:10px">'
+      +'<b style="color:#854F0B">⚠️ '+discXLS.length+' discrepanze XLS vs fattura XML</b>'
+      +'<div style="font-size:12px;color:#854F0B;margin-top:4px">'+discXLS.join('<br>')+'</div></div>';
+  }
+  if(!missXML.length&&!discXLS.length){
+    summary = '<div style="background:#EAF6EF;border:1px solid #2d8a4e;border-radius:8px;padding:8px 14px;margin-bottom:10px;color:#2d8a4e;font-weight:600">'
+      +'✓ Tutti i compensi corrispondono alle fatture XML</div>';
+  }
 
-  return sum+'<div class="tbl-wrap"><table>'
-    +'<thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp.fattura</th><th>Comp.XLS</th><th>Comp.corretto</th></tr></thead>'
+  return summary
+    +'<div class="tbl-wrap"><table>'
+    +'<thead><tr>'
+    +'<th>Data</th><th>Paziente</th>'
+    +'<th>Imp. fattura XML</th>'
+    +'<th style="text-align:right">Comp. XLS</th>'
+    +'<th style="text-align:right">Comp. corretto</th>'
+    +'<th style="text-align:right">Differenza</th>'
+    +'</tr></thead>'
     +'<tbody>'+righe+'</tbody></table></div>';
 }
 
@@ -1235,6 +1264,13 @@ function renderQuote(){
 
 // Carica QE_DB al boot (senza render DOM)
 // Carica quote al boot da localStorage (Drive richiede auth esplicita)
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded", qeInitLocal);
+} else {
+  qeInitLocal();
+}
+
+age (Drive richiede auth esplicita)
 if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded", qeInitLocal);
 } else {
