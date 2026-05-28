@@ -14,7 +14,7 @@ CASTORO,pct,60,,,,60%
 CAZZANIGA,pct,,70,,,€105 vis €70 eco
 COCCIOLO,fisso,50,,,,€50 eco
 COLAFRANCESCO,pct,60,,,,60%
-CORTESE,pct,60,50,15,misto,"vis+eco €140, ctrl €72, tampone €15, eco €50"
+CORTESE,fisso,120,90,0,cortese,"Prima vis+eco €120 | vis+eco+pap €150 | ctrl €72 | eco €90"
 COSTANTINI,pct,50,,,,50%
 EGIDDI,fisso,60,,,,€60 prima €45 ctrl
 ERGASTI,pct,60,,,,60%
