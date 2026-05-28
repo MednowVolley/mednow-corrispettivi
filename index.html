@@ -6,9 +6,7 @@
 <title>Mednow — Corrispettivi Medici</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-<script>
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -148,21 +146,6 @@ tr:hover td{background:var(--surface2)}
 .toast{position:fixed;bottom:20px;right:20px;background:#1c2128;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
 
-/* DISCREPANZE */
-.disc-box{background:#FFF3CD;border:2px solid #F0AD00;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
-.disc-box svg{flex-shrink:0;margin-top:2px;color:#c07a00}
-.disc-title{font-size:13px;font-weight:700;color:#854F0B;margin-bottom:3px}
-.disc-list{font-size:12px;color:#854F0B;line-height:1.7}
-.disc-list span{background:#FFEAA0;border-radius:4px;padding:1px 5px;margin:0 2px;font-weight:600}
-.err-box{background:#FDEDEC;border:2px solid #E74C3C;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
-.err-box svg{flex-shrink:0;margin-top:2px;color:#c0392b}
-.err-title{font-size:13px;font-weight:700;color:#C0392B;margin-bottom:3px}
-.err-list{font-size:12px;color:#C0392B;line-height:1.7}
-.tr-disc td{background:#FFF9E6!important;border-left:4px solid #F0AD00!important}
-.tr-disc td:first-child{font-weight:600}
-.tr-miss td{background:#FDEDEC!important;border-left:4px solid #E74C3C!important}
-.diff-cell{font-weight:700;color:#C0392B;font-family:var(--mono)}
-.diff-cell.pos{color:#2d8a4e}
 /* PRINT */
 @media print{
   .sb,.topbar,.doc-actions,.btn-row,select{display:none!important}
@@ -310,7 +293,20 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
           <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Cognome</div><input type="text" id="qa-cog" placeholder="ROSSI" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font);text-transform:uppercase"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Tipo</div><select id="qa-tipo" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"><option value="pct">% Percentuale</option><option value="fisso">€ Fisso</option></select></div>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Valore</div><input type="number" id="qa-val" placeholder="70" min="0" step="0.5" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Note</div><input type="text" id="qa-note" placeholder="es. 70/30" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">&nbsp;</div><button class="btn btn-p btn-sm" onclick="qeAggiungi()">+ Aggiungi</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
 
 // ── STATO ──────────────────────────────────────────────────
 const S = {
@@ -335,7 +331,7 @@ const DB = {
   CALCAGNI:{pct:20,tipo:'gin',fisso_t:15,note:'20% + €15 tamponi'},
   CANTIANI:{pct:80,note:'80%'},CAPUANO:{pct:70,note:'70%'},
   CASTORO:{pct:60,note:'60%'},
-  CORTESE:{fisso:130,fisso_pap:150,fisso_ctrl:72,fisso_eco:90,fisso_t:15,tipo:'cortese',note:'vis+eco €130 | vis+eco+pap €150 | ctrl €72 | eco €90 | tampone €15'},
+  CORTESE:{fisso:130,fisso_pap:150,fisso_ctrl:72,fisso_eco:90,fisso_t:15,tipo:'cortese',note:'vis+eco €130 | pap €150 | ctrl €72 | eco €90 | tampone €15'},
   CAZZANIGA:{pct:null,fisso_vis:105,fisso_eco:70,note:'€105 vis €70 eco'},
   COCCIOLO:{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:'€50 eco'},
   COLAFRANCESCO:{pct:60,note:'60%'},COSTANTINI:{pct:50,note:'50%'},
@@ -418,7 +414,7 @@ function calcComp(q, imp, desc){
     if(isTampone(d)) return q.fisso_t||15;
     if(d.includes('CONTROLLO')) return q.fisso_ctrl||72;
     if(d.includes('ECO')&&!d.includes('VISITA')) return q.fisso_eco||90;
-    return q.fisso||130; // prima visita + eco
+    return q.fisso||130;
   }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
@@ -791,9 +787,7 @@ function elabora(){
           }
 
           const impFattura = xmlMatch ? xmlMatch.imp : 0;
-          // Se XML trovato: calcola quota sull'imponibile XML
-          // Se XML non trovato: usa compenso XLS direttamente (già corretto per tipo prestazione)
-          const compBase = impFattura>0 ? calcComp(q, impFattura, xmlMatch ? xmlMatch.desc : riga.desc) : riga.imp;
+          const compBase = impFattura>0 ? calcComp(q, impFattura, riga.desc) : riga.imp;
 
           // Match portale
           let isPortale=false, impPortale=0, detrazione=0;
@@ -909,93 +903,34 @@ function renderVerifica(mese, anno){
 
 function renderTabellaRighe(r){
   if(!r.righeCalcolate||r.righeCalcolate.length===0) return '';
-
-  var discrepanze = [];
-  var erroriGravi = [];
-
-  var righe = r.righeCalcolate.map(function(p){
-    var impFatt = p.impFattura||0;
-    var compXLS = p.xlsComp||p.imp||0;
-    var compCorr = p.compensoCorretto!==undefined ? p.compensoCorretto : (p.compBase||compXLS);
-    var diff = Math.round((compCorr - compXLS)*100)/100;
-    var hasDiff = Math.abs(diff) > 0.5;
-
-    var trClass = '';
-    var motivo = '';
-    var diffCell = '';
-
-    if(!p.xmlTrovato && impFatt===0){
-      // Fattura XML non trovata
-      trClass = 'tr-miss';
-      motivo = '⚠ Fattura XML non trovata';
-      erroriGravi.push((p.data||'')+' '+( p.paziente||''));
-      diffCell = '<td class="diff-cell tr-r">—</td>';
-    } else if(hasDiff){
-      // Discrepanza tra XLS e calcolo corretto
-      trClass = 'tr-disc';
-      if(diff > 0) motivo = '↑ XLS sottostima di €'+fmt(Math.abs(diff));
-      else motivo = '↓ XLS sovrastima di €'+fmt(Math.abs(diff));
-      discrepanze.push((p.paziente||'')+ ' ('+motivo+')');
-      diffCell = '<td class="diff-cell tr-r '+(diff>0?'':'pos')+'">'+(diff>0?'+':'')+fmt(diff)+'</td>';
-    } else if(p.isPortale && p.detrazione > 0){
-      trClass = 'tr-disc';
-      motivo = '⚠ Portale: detrazione -€'+fmt(p.detrazione)+' non applicata';
-      discrepanze.push((p.paziente||'')+' ('+motivo+')');
-      diffCell = '<td class="diff-cell tr-r">-€'+fmt(p.detrazione)+'</td>';
-    } else {
-      diffCell = '<td class="tr-r" style="color:var(--green);font-weight:600">✓</td>';
+  const righe = r.righeCalcolate.map(p=>{
+    let cls='', badge='', compStr='€'+fmt(p.compensoCorretto);
+    if(p.errore&&p.xmlTrovato){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">⚠ diff €'+fmt(Math.abs(p.xlsImp-p.compensoCorretto))+'</span>';
+      compStr='<span style="text-decoration:line-through;color:var(--red);font-size:11px">€'+fmt(p.xlsImp)+'</span> → <strong style="color:var(--green)">€'+fmt(p.compensoCorretto)+'</strong>';
+    } else if(p.isPortale&&p.detrazione>0){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">portale -€'+fmt(p.detrazione)+'</span>';
+    } else if(p.isPortale){
+      cls='tr-ok';
+      badge='<span class="badge b-ok" style="margin-left:4px">✓ portale</span>';
+    } else if(!p.xmlTrovato&&p.impFattura===0){
+      badge='<span class="badge b-warn" style="margin-left:4px">no XML</span>';
     }
-
-    var impCell = impFatt>0 ? '€'+fmt(impFatt) : '<span style="color:var(--text3)">—</span>';
-    var badge = motivo ? '<span style="font-size:10px;color:#854F0B;margin-left:4px">'+motivo+'</span>' : '';
-
-    return '<tr class="'+trClass+'">'
-      +'<td>'+( p.data||'')+'</td>'
-      +'<td>'+(p.paziente||'')+badge+'</td>'
-      +'<td>'+impCell+'</td>'
-      +'<td class="tr-r">€'+fmt(compXLS)+'</td>'
-      +'<td class="tr-r '+(hasDiff?'diff-cell':'')+(diff>0?' ':'')+'">€'+fmt(compCorr)+'</td>'
-      +diffCell
-      +'</tr>';
+    const impCell=p.impFattura>0?'€'+fmt(p.impFattura):'<span style="color:var(--text3)">—</span>';
+    return '<tr class="'+cls+'"><td>'+p.data+'</td><td>'+p.paziente+badge+'</td><td>'+p.desc+'</td><td class="tr-r">'+impCell+'</td><td class="tr-r">€'+fmt(p.xlsImp)+'</td><td class="tr-r">'+compStr+'</td></tr>';
   }).join('');
 
-  // Box discrepanze in cima
-  var summaryHTML = '';
+  const nErr=r.righeCalcolate.filter(p=>p.errore||p.isPortale&&p.detrazione>0).length;
+  const sum=nErr>0
+    ?'<div class="alert a-warn" style="margin-bottom:8px">⚠ '+nErr+' righe con compenso da correggere</div>'
+    :'<div class="alert a-ok" style="margin-bottom:8px">✓ Tutti i compensi corretti</div>';
 
-  if(erroriGravi.length > 0){
-    summaryHTML += '<div class="err-box">'
-      +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-      +'<div><div class="err-title">❌ '+erroriGravi.length+' fatture XML mancanti</div>'
-      +'<div class="err-list">'+erroriGravi.map(function(e){return '<span>'+e+'</span>';}).join(' ')+'</div>'
-      +'</div></div>';
-  }
-
-  if(discrepanze.length > 0){
-    summaryHTML += '<div class="disc-box">'
-      +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-      +'<div><div class="disc-title">⚠ '+discrepanze.length+' discrepanze tra XLS gestionale e fatture XML</div>'
-      +'<div class="disc-list">'+discrepanze.map(function(d){return '• '+d;}).join('<br>')+'</div>'
-      +'</div></div>';
-  }
-
-  if(erroriGravi.length===0 && discrepanze.length===0){
-    summaryHTML = '<div class="alert a-ok" style="margin-bottom:8px">'
-      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-      +' Tutti i compensi corrispondono alle fatture XML</div>';
-  }
-
-  return summaryHTML
-    +'<div class="tbl-wrap"><table>'
-    +'<thead><tr>'
-    +'<th>Data</th><th>Paziente</th>'
-    +'<th>Imp. fattura XML</th>'
-    +'<th style="text-align:right">Comp. XLS</th>'
-    +'<th style="text-align:right">Comp. corretto</th>'
-    +'<th style="text-align:right">Differenza</th>'
-    +'</tr></thead>'
+  return sum+'<div class="tbl-wrap"><table>'
+    +'<thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp.fattura</th><th>Comp.XLS</th><th>Comp.corretto</th></tr></thead>'
     +'<tbody>'+righe+'</tbody></table></div>';
 }
-
 
 function toggle(i){
   const mc=document.getElementById('mc'+i);
@@ -1033,7 +968,7 @@ function renderCorrispettivi(mese, anno){
   document.getElementById('doc-list').innerHTML=html||'<div style="text-align:center;padding:40px;color:var(--text3)">Elabora prima i file</div>';
 }
 
-// ── STAMPA → GENERA EXCEL ──────────────────────────────────
+// ── STAMPA ─────────────────────────────────────────────────
 function stampa(cog){
   var r = S.risultati.find(function(x){return x.cog===cog;});
   if(!r){toast('Dati non trovati per '+cog);return;}
@@ -1045,8 +980,6 @@ function generaExcel(r){
   var anno = document.getElementById('sel-anno').value;
   var mesePad = String(MESI.indexOf(mese)).padStart(2,'0');
   var lastDay = new Date(parseInt(anno), parseInt(mesePad), 0).getDate();
-
-  // Raccogli descrizioni prestazioni uniche (colonne)
   var colMap = {};
   (r.righeCalcolate||[]).forEach(function(riga){
     var d = riga.desc||'Prestazione';
@@ -1054,20 +987,12 @@ function generaExcel(r){
   });
   var prestCols = Object.keys(colMap);
   if(prestCols.length === 0) prestCols = ['Compenso'];
-
   var rows = [];
-
-  // Titolo, ambulatorio, periodo
   rows.push(['Report compensi ' + r.cog]);
   rows.push(['AMBULATORIO', r.sedi.join('+')]);
   rows.push(['PERIODO', 'DAL 01/'+mesePad+'/'+anno, 'AL '+lastDay+'/'+mesePad+'/'+anno]);
   rows.push([]);
-
-  // Header
-  var hdr = ['Data','Paziente'].concat(prestCols);
-  rows.push(hdr);
-
-  // Dati + subtotali
+  rows.push(['Data','Paziente'].concat(prestCols));
   var subtot = new Array(prestCols.length).fill(0);
   (r.righeCalcolate||[]).forEach(function(riga){
     var row = [riga.data||'', riga.paziente||''];
@@ -1078,7 +1003,6 @@ function generaExcel(r){
     });
     rows.push(row);
   });
-
   rows.push([]);
   rows.push(['Subtotali',''].concat(subtot));
   rows.push([]);
@@ -1086,29 +1010,30 @@ function generaExcel(r){
   rows.push(["Ritenuta d'acconto 20%",'','','',-(r.ritenuta||0)]);
   rows.push(['Totale netto','','','',r.netto||0]);
   rows.push([]);
-  rows.push(['MedNow Medical Center Srl · Viale Zara 113A Milano · PEC mednow@legalmail.it · P.IVA 12120830968 · Cod. SDI KGVVJ2H']);
-
+  rows.push(['MedNow Medical Center Srl · Viale Zara 113A Milano · P.IVA 12120830968']);
   var ws = XLSX.utils.aoa_to_sheet(rows);
-
-  // Larghezze colonne
   var cols = [{wch:20},{wch:28}];
   prestCols.forEach(function(){cols.push({wch:24});});
   ws['!cols'] = cols;
-
-  // Merge titolo
   var nc = 1 + prestCols.length;
-  ws['!merges'] = [
-    {s:{r:0,c:0},e:{r:0,c:nc}},
-    {s:{r:1,c:1},e:{r:1,c:nc}},
-    {s:{r:2,c:2},e:{r:2,c:nc}},
-    {s:{r:rows.length-1,c:0},e:{r:rows.length-1,c:nc}}
-  ];
-
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:nc}},{s:{r:1,c:1},e:{r:1,c:nc}},{s:{r:2,c:2},e:{r:2,c:nc}},{s:{r:rows.length-1,c:0},e:{r:rows.length-1,c:nc}}];
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Compensi');
   var fname = 'compensi_'+r.cog+'_'+mesePad+'_'+anno+'.xlsx';
   XLSX.writeFile(wb, fname);
-  toast('✓ Excel scaricato: '+fname);
+  toast('✓ Excel: '+fname);
+}
+
+function _old_stampa(cog){
+  const el=document.getElementById('doc-'+cog);
+  if(!el){toast('Doc non trovato');return;}
+  const css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:13px;padding:20px}.doc{border:1px solid #ccc;border-radius:8px;overflow:hidden}.doc-head{background:#185FA5;color:#fff;padding:12px 16px;display:flex;justify-content:space-between}.doc-title{font-size:15px;font-weight:700}.doc-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd}.doc-cell{padding:8px 14px;font-size:12px;border-right:1px solid #ddd}.doc-lbl{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px}.tbl-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:11px}th{padding:6px 10px;background:#f5f5f5;text-align:left;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase}td{padding:6px 10px;border-bottom:1px solid #eee}.doc-totali{padding:10px 14px;background:#f9f9f9;border-top:2px solid #ddd}.tot-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}.tot-row.main{border-top:1px solid #ddd;margin-top:4px;padding-top:6px}.doc-footer{padding:6px 14px;font-size:10px;color:#888}.doc-actions{display:none}button{display:none}';
+  const inner=el.innerHTML.replace(/<div class="doc-actions">[\s\S]*?<\/div>\s*<\/div>\s*$/,'</div>');
+  const w=window.open('','_blank','width=800,height=900');
+  if(!w){toast('Abilita popup per questo sito');return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Corrispettivo '+cog+'</title><style>'+css+'</style></head><body><div class="doc">'+inner+'</div></body></html>');
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print();},500);
 }
 
 function copia(cog,lordo,det,rit,netto){
@@ -1122,57 +1047,31 @@ let QE_DB = null;
 const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
 
 function qeInit(){
-  // Carica dal Google Sheet pubblico
-  fetch('https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/gviz/tq?tqx=out:csv')
-    .then(function(r){ return r.ok ? r.text() : null; })
-    .then(function(csv){
-      if(csv){
-        var db = parseQuoteCSV(csv);
-        if(Object.keys(db).length > 5){
-          QE_DB = db;
-          try{ localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); }catch(e){}
-          Object.assign(DB, QE_DB);
-          var tb = document.getElementById('qe-tbody');
-          if(tb) qeRender();
-          return;
-        }
-      }
+  // Carica da Drive (fonte primaria) → fallback localStorage → fallback DB default
+  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
+  fetch('https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media', {
+    headers: {'Authorization': 'Bearer ' + (window.GAPI_TOKEN||'')}
+  })
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    if(data && typeof data === 'object' && Object.keys(data).length > 0){
+      QE_DB = data;
+      try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
+      Object.assign(DB, QE_DB);
+      toast('Quote caricate da Drive');
+    } else {
       qeInitLocal();
-    })
-    .catch(function(){ qeInitLocal(); });
-}
-
-function parseQuoteCSV(csv){
-  var db = {};
-  var lines = csv.split('\n').slice(1);
-  lines.forEach(function(line){
-    if(!line.trim()) return;
-    var cols = line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
-    var cog = (cols[0]||'').toUpperCase().trim();
-    if(!cog) return;
-    var tipo = cols[1]||'pct';
-    var val = parseFloat(cols[2])||0;
-    var fisso_eco = parseFloat(cols[3])||0;
-    var fisso_t = parseFloat(cols[4])||0;
-    var tipo_spec = (cols[5]||'').trim();
-    var note = (cols[6]||'').trim();
-    var entry = {note: note};
-    if(tipo === 'pct') entry.pct = val; else entry.fisso = val;
-    if(fisso_eco) entry.fisso_eco = fisso_eco;
-    if(fisso_t) entry.fisso_t = fisso_t;
-    if(tipo_spec) entry.tipo = tipo_spec;
-    db[cog] = entry;
-  });
-  return db;
+    }
+  })
+  .catch(() => qeInitLocal());
 }
 
 function qeInitLocal(){
-  // Usa sempre DB_DEFAULT (hardcoded) come base sicura
-  // Il localStorage potrebbe avere versioni obsolete
-  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
-  Object.assign(DB, QE_DB);
-  var tb = document.getElementById('qe-tbody');
-  if(tb) qeRender();
+  try {
+    const saved = localStorage.getItem(QE_KEY);
+    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
+    Object.assign(DB, QE_DB);
+  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
 }
 
 function qeSave(){
@@ -1316,33 +1215,6 @@ function qeRender(){
     const isPct=!!q.pct;
     const val=isPct?q.pct:(q.fisso||0);
     return '<tr class="qe-row" data-cog="'+c+'">'
-      +'<td style="font-weight:600">'+c+'</td>'
-      +'<td><select class="qe-sel" onchange="qeMark(this)">'
-      +'<option value="pct"'+(isPct?' selected':'')+'>% Perc.</option>'
-      +'<option value="fisso"'+(!isPct?' selected':'')+'>€ Fisso</option>'
-      +'</select></td>'
-      +'<td><input type="number" class="qe-inp" value="'+val+'" min="0" step="0.5" oninput="qeMark(this)"></td>'
-      +'<td><input type="text" class="qe-note" value="'+(q.note||'').replace(/"/g,'&quot;')+'" oninput="qeMark(this)"></td>'
-      +'<td style="white-space:nowrap">'
-      +'<button class="qe-save" onclick="qeSalvaSingolo(this)">Salva</button>&nbsp;'
-      +'<button class="qe-del" onclick="qeElimina(this)">✕</button>'
-      +'</td></tr>';
-  }).join('');
-}
-
-function renderQuote(){
-  if(!QE_DB) qeInit(); else qeRender();
-}
-
-// Carica QE_DB al boot (senza render DOM)
-// Carica quote al boot da localStorage (Drive richiede auth esplicita)
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded", qeInitLocal);
-} else {
-  qeInitLocal();
-}
-
-turn '<tr class="qe-row" data-cog="'+c+'">'
       +'<td style="font-weight:600">'+c+'</td>'
       +'<td><select class="qe-sel" onchange="qeMark(this)">'
       +'<option value="pct"'+(isPct?' selected':'')+'>% Perc.</option>'
