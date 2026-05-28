@@ -1092,239 +1092,47 @@ function getArchivioList(){
 }
 
 function renderArchivioList(){
-  var list = getArchivioList();
-  var cnt = document.getElementById('sb-arch-count');
-  if(cnt) cnt.textContent = list.length ? list.length+' mes'+(list.length===1?'e':'i') : '';
-  var el = document.getElementById('archivio-list');
+  var list=getArchivioList();
+  var cnt=document.getElementById('sb-arch-count');
+  if(cnt) cnt.textContent=list.length?list.length+' mes'+(list.length===1?'e':'i'):'';
+  var el=document.getElementById('archivio-list');
+  if(!el) return;
+  var allKeys=[];
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k)allKeys.push(k);}
+  var mk=allKeys.filter(function(k){return k.startsWith('mednow_corr:');});
+  var dbg=allKeys.length===0
+    ?'<div class="alert a-warn" style="margin-bottom:12px;font-size:12px">⚠ localStorage vuoto &mdash; elabora i file e poi archivia.</div>'
+    :mk.length
+      ?'<div class="alert a-ok" style="margin-bottom:12px;font-size:12px">✓ '+mk.length+' chiave/i archivio trovata/e</div>'
+      :'<div class="alert a-warn" style="margin-bottom:12px;font-size:12px">⚠ localStorage ha dati ma nessuna chiave Mednow</div>';
   if(!list.length){
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">\u2014 Nessun mese archiviato. Elabora e premi "Archivia" per salvare.</div>';
+    el.innerHTML=dbg+'<div style="text-align:center;padding:30px;color:var(--text3)"><div style="font-size:14px;margin-bottom:8px">Nessun mese archiviato</div><div style="font-size:12px">Elabora i file e premi <strong>Elabora e verifica</strong>. Il mese viene salvato automaticamente.</div></div>';
     return;
   }
-  el.innerHTML = list.map(function(entry){
-    var mi = MESI.indexOf(entry.mese);
-    var totN = entry.risultati.reduce(function(s,r){return s+r.netto;},0);
-    var totL = entry.risultati.reduce(function(s,r){return s+r.lordo;},0);
-    var nMedici = entry.risultati.length;
-    var savedStr = entry.savedAt ? new Date(entry.savedAt).toLocaleDateString('it-IT') : '';
+  var locale='it-IT';
+  el.innerHTML=dbg+list.map(function(entry){
+    var mi=MESI.indexOf(entry.mese);
+    var totN=entry.risultati.reduce(function(s,r){return s+r.netto;},0);
+    var totL=entry.risultati.reduce(function(s,r){return s+r.lordo;},0);
+    var nM=entry.risultati.length;
+    var sd=entry.savedAt?new Date(entry.savedAt).toLocaleDateString(locale):'';
+    var m2=String(mi).padStart(2,'0'); var a2=entry.anno.slice(2);
+    var k1=entry.mese; var k2=entry.anno;
     return '<div class="mc" style="margin-bottom:10px">'
-      +'<div class="mc-head" style="cursor:default">'
+      +'<div class="mc-head">'
       +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<div class="mc-av" style="width:40px;height:40px;font-size:11px">'+String(mi).padStart(2,'0')+'/'+entry.anno.slice(2)+'</div>'
-      +'<div>'
-      +'<div class="mc-name">'+entry.mese+' '+entry.anno+'</div>'
-      +'<div class="mc-meta">'+nMedici+' medici \u00b7 lordo \u20ac'+fmt(totL)+' \u00b7 salvato '+savedStr+'</div>'
-      +'</div></div>'
+      +'<div class="mc-av" style="width:40px;height:40px;font-size:11px">'+m2+'/'+a2+'</div>'
+      +'<div><div class="mc-name">'+entry.mese+' '+entry.anno+'</div>'
+      +'<div class="mc-meta">'+nM+' medici \u00b7 lordo \u20ac'+fmt(totL)+' \u00b7 salvato '+sd+'</div></div></div>'
       +'<div class="mc-right" style="gap:6px">'
       +'<div class="mc-netto">\u20ac'+fmt(totN)+'</div>'
-      +'<button class="btn btn-p btn-sm" onclick="caricaDaArchivio(\''+entry.mese+'\',\''+entry.anno+'\')">Apri</button>'
-      +'<button class="btn btn-sm" onclick="aggiornaArchivioXLS(\''+entry.mese+'\',\''+entry.anno+'\')" title="Ricarica XLS modificato">\u21bb XLS</button>'
-      +'<button class="btn btn-sm" style="color:var(--red)" onclick="eliminaDaArchivio(\''+entry.mese+'\',\''+entry.anno+'\')">\u00d7</button>'
+      +'<button class="btn btn-p btn-sm" onclick="caricaDaArchivio(\'' +k1+ '\',\'' +k2+ '\')" >Apri</button>'
+      +'<button class="btn btn-sm" onclick="aggiornaArchivioXLS(\'' +k1+ '\',\'' +k2+ '\')" >\u21bb XLS</button>'
+      +'<button class="btn btn-sm" style="color:var(--red)" onclick="eliminaDaArchivio(\'' +k1+ '\',\'' +k2+ '\')" >\u00d7</button>'
       +'</div></div></div>';
   }).join('');
 }
 
-function caricaDaArchivio(mese, anno){
-  var raw = localStorage.getItem(archivioKey(mese, anno));
-  if(!raw){ toast('Mese non trovato in archivio'); return; }
-  var entry = JSON.parse(raw);
-  S.risultati = entry.risultati;
-  var mi = MESI.indexOf(mese);
-  if(mi > 0) document.getElementById('sel-mese').value = mi;
-  document.getElementById('sel-anno').value = anno;
-  document.getElementById('sb-per').textContent = mese+' '+anno;
-  renderVerifica(mese, anno);
-  renderCorrispettivi(mese, anno);
-  var navBtn = document.querySelectorAll('.nb')[1];
-  goTo(navBtn, 'verifica');
-  toast('Caricato: '+mese+' '+anno);
-}
-
-function eliminaDaArchivio(mese, anno){
-  if(!confirm('Eliminare '+mese+' '+anno+' dall\'archivio?')) return;
-  localStorage.removeItem(archivioKey(mese, anno));
-  renderArchivioList();
-  toast('Eliminato: '+mese+' '+anno);
-}
-
-function clearArchivio(){
-  if(!confirm('Svuotare tutto l\'archivio? Operazione non reversibile.')) return;
-  var keys = [];
-  for(var i=0; i<localStorage.length; i++){
-    var k = localStorage.key(i);
-    if(k && k.startsWith('mednow_corr:')) keys.push(k);
-  }
-  keys.forEach(function(k){ localStorage.removeItem(k); });
-  renderArchivioList();
-  toast('Archivio svuotato');
-}
-
-// ── AGGIORNAMENTO DA XLS ──────────────────────────────────────
-var _aggiornaMese = null, _aggiornaAnno = null;
-
-function aggiornaArchivioXLS(mese, anno){
-  _aggiornaMese = mese; _aggiornaAnno = anno;
-  var inp = document.getElementById('fi-xls-update');
-  if(!inp){
-    inp = document.createElement('input');
-    inp.type = 'file'; inp.id = 'fi-xls-update';
-    inp.accept = '.xls,.xlsx'; inp.multiple = true;
-    inp.style.display = 'none';
-    document.body.appendChild(inp);
-    inp.addEventListener('change', function(){
-      if(!inp.files.length) return;
-      var backup = JSON.parse(JSON.stringify(S.xlsCorr));
-      S.xlsCorr = {};
-      var loaded = 0, total = inp.files.length;
-      Array.from(inp.files).forEach(function(f){
-        var r = new FileReader();
-        r.onload = function(e){
-          parseXLSCorr(e.target.result, f.name);
-          loaded++;
-          if(loaded === total) elaboraEAggiorna(_aggiornaMese, _aggiornaAnno, backup);
-        };
-        r.readAsArrayBuffer(f);
-      });
-    });
-  }
-  inp.value = '';
-  inp.click();
-  toast('Seleziona il file XLS aggiornato...');
-}
-
-function elaboraEAggiorna(mese, anno, backup){
-  if(!Object.keys(S.xlsCorr).length){ S.xlsCorr = backup; toast('Nessun XLS caricato'); return; }
-  var raw = localStorage.getItem(archivioKey(mese, anno));
-  var esistenti = raw ? JSON.parse(raw).risultati : [];
-  var nuoviCog = Object.keys(S.xlsCorr);
-
-  nuoviCog.forEach(function(cog){
-    var q = DB[cog]||{pct:70,note:'70% (default)'};
-    var xlsData = S.xlsCorr[cog]||[];
-    var ppList = S.portali[cog]||[];
-    var lordo=0, det=0, righeCalcolate=[], sedi=[];
-
-    xlsData.forEach(function(sede){
-      if(!sedi.includes(sede.sede)) sedi.push(sede.sede);
-      sede.righe.forEach(function(riga){
-        var pazNorm = normStr(riga.paziente);
-        var dataVariants = [
-          normDate(riga.data),
-          normDate(riga.data).replace(/\//g,'-'),
-          normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3-$2-$1')
-        ];
-        var xmlMatch = null;
-        for(var vi=0; vi<dataVariants.length; vi++){
-          var k = pazNorm+'|'+dataVariants[vi];
-          if(S.xmlIndex[k]){
-            var cands = S.xmlIndex[k];
-            xmlMatch = cands.find(function(x){return !x.cognomeMedico||x.cognomeMedico===cog;})||cands[0];
-            break;
-          }
-        }
-        var impFattura = xmlMatch ? xmlMatch.imp : 0;
-        var compBase = 0;
-        if(impFattura > 0){
-          if(q.tipo==='cortese' && xmlMatch.righeLinee && xmlMatch.righeLinee.length > 1){
-            compBase = xmlMatch.righeLinee.reduce(function(s,rl){return s+calcComp(q,rl.imp,rl.desc);},0);
-          } else {
-            compBase = calcComp(q, impFattura, xmlMatch ? xmlMatch.desc : riga.desc);
-          }
-        } else { compBase = riga.imp; }
-
-        var isPortale=false, impPortale=0, detrazione=0;
-        var pazWords = pazNorm.split(' ').filter(function(w){return w.length>2;});
-        for(var pi=0; pi<S.idoctors.length; pi++){
-          var p = S.idoctors[pi];
-          if(p.cognomeMedico!==cog) continue;
-          var pDate = normDate(p.data).replace(/\//g,'-');
-          var matchData = dataVariants.some(function(dv){return dv===pDate||dv.replace(/\//g,'-')===pDate;});
-          if(!matchData) continue;
-          var pNorm = normStr(p.paziente).split(' ').filter(function(w){return w.length>2;});
-          if(pazWords.some(function(w){return pNorm.includes(w);})){
-            isPortale=true; impPortale=p.importo||impFattura; detrazione=impPortale*DET; break;
-          }
-        }
-        var compensoCorretto = compBase - detrazione;
-        var errore = Math.abs(riga.imp - compensoCorretto) > 0.5;
-        lordo += compBase; det += detrazione;
-        righeCalcolate.push({data:riga.data, paziente:riga.paziente, desc:riga.desc, impFattura:impFattura, compBase:compBase, xlsImp:riga.imp, isPortale:isPortale, impPortale:impPortale, detrazione:detrazione, compensoCorretto:compensoCorretto, errore:errore, xmlTrovato:!!xmlMatch});
-      });
-    });
-
-    var imponibile=lordo-det, ritenuta=imponibile*RIT, netto=imponibile-ritenuta;
-    var xlsLordo=xlsData.reduce(function(s,d){return s+d.subtotale;},0);
-    var nErr=righeCalcolate.filter(function(r){return r.errore;}).length;
-    var nuovoRis = {cog:cog, q:q, sedi:sedi, lordo:lordo, det:det, imponibile:imponibile, ritenuta:ritenuta, netto:netto, righeCalcolate:righeCalcolate, xlsLordo:xlsLordo, nErr:nErr, fatturato:righeCalcolate.reduce(function(s,r){return s+r.impFattura;},0)||lordo/((q.pct||50)/100)};
-
-    var idx = esistenti.findIndex(function(r){return r.cog===cog;});
-    if(idx >= 0) esistenti[idx] = nuovoRis;
-    else esistenti.push(nuovoRis);
-  });
-
-  var entry = {mese:mese, anno:anno, savedAt: new Date().toISOString(), risultati: esistenti};
-  localStorage.setItem(archivioKey(mese, anno), JSON.stringify(entry));
-  S.risultati = esistenti;
-  document.getElementById('sb-per').textContent = mese+' '+anno;
-  renderVerifica(mese, anno);
-  renderCorrispettivi(mese, anno);
-  renderArchivioList();
-  var navBtn = document.querySelectorAll('.nb')[1];
-  goTo(navBtn, 'verifica');
-  toast('\u2713 Aggiornato: '+nuoviCog.join(', '));
-}
-
-
-// ── ESPORTA / IMPORTA ARCHIVIO JSON ──────────────────────────
-function esportaArchivio(){
-  var list = getArchivioList();
-  if(!list.length){ toast('Archivio vuoto — nulla da esportare'); return; }
-  var blob = new Blob([JSON.stringify({v:1, esportato: new Date().toISOString(), archivio: list}, null, 2)], {type:'application/json'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = 'mednow_archivio_'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  toast('✓ Archivio esportato — salvalo su Drive');
-}
-
-function importaArchivio(input){
-  var file = input.files[0];
-  if(!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      var data = JSON.parse(e.target.result);
-      var list = data.archivio || (Array.isArray(data) ? data : []);
-      if(!list.length){ toast('File JSON vuoto o non valido'); return; }
-      var importati = 0;
-      list.forEach(function(entry){
-        if(entry.mese && entry.anno && entry.risultati){
-          localStorage.setItem(archivioKey(entry.mese, entry.anno), JSON.stringify(entry));
-          importati++;
-        }
-      });
-      renderArchivioList();
-      toast('✓ Importati '+importati+' mes'+(importati===1?'e':'i'));
-    } catch(ex){ toast('Errore importazione: '+ex.message); }
-    input.value = '';
-  };
-  reader.readAsText(file);
-}
-
-// ── QUOTE TABLE ────────────────────────────────────────────
-function renderQuote(){
-  const tb=document.getElementById('quote-tbody');
-  if(!tb) return;
-  tb.innerHTML=Object.entries(DB).map(([c,q])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>').join('');
-}
-renderQuote();
-
-// Init al caricamento
-if(document.readyState === "loading"){
-  document.addEventListener("DOMContentLoaded", qeInit);
-} else {
-  qeInit();
-}
 </script>
 </body>
 </html>
