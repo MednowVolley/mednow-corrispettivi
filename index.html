@@ -331,7 +331,7 @@ const DB = {
   CALCAGNI:{pct:20,tipo:'gin',fisso_t:15,note:'20% + €15 tamponi'},
   CANTIANI:{pct:80,note:'80%'},CAPUANO:{pct:70,note:'70%'},
   CASTORO:{pct:60,note:'60%'},
-  CORTESE:{fisso:120,fisso_pap:150,fisso_ctrl:72,fisso_eco:90,tipo:'cortese',note:'Prima vis+eco €120, vis+eco+pap €150, ctrl €72, eco €90'},
+  CORTESE:{fisso:130,fisso_pap:150,fisso_ctrl:72,fisso_eco:90,fisso_t:15,tipo:'cortese',note:'vis+eco €130 | vis+eco+pap €150 | ctrl €72 | eco €90 | tampone €15'},
   CAZZANIGA:{pct:null,fisso_vis:105,fisso_eco:70,note:'€105 vis €70 eco'},
   COCCIOLO:{pct:null,fisso_eco:50,fisso_onc:95,fisso_ctrl:75,note:'€50 eco'},
   COLAFRANCESCO:{pct:60,note:'60%'},COSTANTINI:{pct:50,note:'50%'},
@@ -409,12 +409,12 @@ function calcComp(q, imp, desc){
     return q.pct ? imp*q.pct/100 : imp*0.7;
   }
   if(q.tipo==='cortese'){
-    // Compensi fissi per tipo di prestazione
     const d = desc.toUpperCase();
     if(d.includes('PAP')) return q.fisso_pap||150;
-    if(d.includes('CONTROLLO')||d.includes('CONTROLLO')) return q.fisso_ctrl||72;
+    if(isTampone(d)) return q.fisso_t||15;
+    if(d.includes('CONTROLLO')) return q.fisso_ctrl||72;
     if(d.includes('ECO')&&!d.includes('VISITA')) return q.fisso_eco||90;
-    return q.fisso||120; // prima visita + eco
+    return q.fisso||130; // prima visita + eco
   }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
