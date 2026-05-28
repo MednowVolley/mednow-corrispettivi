@@ -435,11 +435,10 @@ function goTo(el, id){
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   if(el) el.classList.add('on');
-  const pg = document.getElementById('page-'+id);
+  var pg = document.getElementById('page-'+id);
   if(pg) pg.classList.add('on');
-  const tb = document.getElementById('tb-title');
+  var tb = document.getElementById('tb-title');
   if(tb) tb.textContent = TITLES[id]||id;
-  // Inizializza pagine alla navigazione
   if(id==='quote'){ if(!QE_DB) qeInit(); else qeRender(); }
   if(id==='archivio'){ renderArchivioList(); }
 }
