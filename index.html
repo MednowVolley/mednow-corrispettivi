@@ -1055,7 +1055,7 @@ const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
 
 function qeInit(){
   // Carica dal Google Sheet pubblico
-  fetch('https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/pub?output=csv')
+  fetch('https://raw.githubusercontent.com/MednowVolley/mednow-corrispettivi/main/quote.csv')
     .then(function(r){ return r.ok ? r.text() : null; })
     .then(function(csv){
       if(csv){
