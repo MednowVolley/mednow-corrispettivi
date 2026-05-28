@@ -758,7 +758,21 @@ function elabora(){
           }
 
           const impFattura = xmlMatch ? xmlMatch.imp : 0;
-          const compBase = impFattura>0 ? calcComp(q, impFattura, riga.desc) : riga.imp;
+          // Per medici con compensi fissi per tipo (es. Cortese):
+          // calcola il compenso riga per riga dall'XML
+          let compBase = 0;
+          if(impFattura > 0){
+            if(q.tipo === 'cortese' && xmlMatch.righeLinee && xmlMatch.righeLinee.length > 1){
+              // Somma compenso per ogni riga XML (visita + tampone + eco separati)
+              compBase = xmlMatch.righeLinee.reduce(function(s, rl){
+                return s + calcComp(q, rl.imp, rl.desc);
+              }, 0);
+            } else {
+              compBase = calcComp(q, impFattura, xmlMatch ? xmlMatch.desc : riga.desc);
+            }
+          } else {
+            compBase = riga.imp; // fallback: usa compenso XLS
+          }
 
           // Match portale
           let isPortale=false, impPortale=0, detrazione=0;
