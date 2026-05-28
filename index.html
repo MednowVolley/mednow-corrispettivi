@@ -375,7 +375,7 @@ function calcComp(q, imp, desc){
   if(q.tipo==='cortese'){
     const d = desc.toUpperCase();
     if(d.includes('PAP')) return q.fisso_pap||150;
-    if(isTampone(d)) return q.fisso_t||15;
+    if(d.includes('TAMPONE')||d.includes('HPV')) return q.fisso_t||15;
     if(d.includes('CONTROLLO')) return q.fisso_ctrl||72;
     if((d.includes('ECO')||d.includes('ECOGRAFIA'))&&!d.includes('VISITA')) return q.fisso_eco||90;
     return q.fisso||130;
