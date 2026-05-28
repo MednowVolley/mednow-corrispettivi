@@ -1132,6 +1132,197 @@ function renderArchivioList(){
       +'</div></div></div>';
   }).join('');
 }
+function caricaDaArchivio(mese, anno){
+  var raw=localStorage.getItem(archivioKey(mese,anno));
+  if(!raw){toast('Mese non trovato in archivio');return;}
+  var entry=JSON.parse(raw);
+  S.risultati=entry.risultati;
+  var mi=MESI.indexOf(mese);
+  if(mi>0) document.getElementById('sel-mese').value=mi;
+  document.getElementById('sel-anno').value=anno;
+  document.getElementById('sb-per').textContent=mese+' '+anno;
+  renderVerifica(mese,anno);
+  renderCorrispettivi(mese,anno);
+  var nb=document.querySelectorAll('.nb')[1];
+  goTo(nb,'verifica');
+  toast('Caricato: '+mese+' '+anno);
+}
+
+function eliminaDaArchivio(mese, anno){
+  if(!confirm('Eliminare '+mese+' '+anno+' dall\'archivio?')) return;
+  localStorage.removeItem(archivioKey(mese,anno));
+  renderArchivioList();
+  toast('Eliminato: '+mese+' '+anno);
+}
+
+function clearArchivio(){
+  if(!confirm('Svuotare tutto l\'archivio? Non reversibile.')) return;
+  var keys=[];
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith('mednow_corr:'))keys.push(k);}
+  keys.forEach(function(k){localStorage.removeItem(k);});
+  renderArchivioList();
+  toast('Archivio svuotato');
+}
+
+function esportaArchivio(){
+  var list=getArchivioList();
+  if(!list.length){toast('Archivio vuoto');return;}
+  var blob=new Blob([JSON.stringify({v:1,esportato:new Date().toISOString(),archivio:list},null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='mednow_archivio_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('\u2713 Archivio esportato \u2014 salvalo su Drive');
+}
+
+function importaArchivio(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var list=data.archivio||(Array.isArray(data)?data:[]);
+      if(!list.length){toast('File JSON vuoto o non valido');return;}
+      var imp=0;
+      list.forEach(function(entry){
+        if(entry.mese&&entry.anno&&entry.risultati){
+          localStorage.setItem(archivioKey(entry.mese,entry.anno),JSON.stringify(entry));
+          imp++;
+        }
+      });
+      renderArchivioList();
+      toast('\u2713 Importati '+imp+' mes'+(imp===1?'e':'i'));
+    }catch(ex){toast('Errore importazione: '+ex.message);}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── AGGIORNAMENTO DA XLS ──────────────────────────────────────
+var _aggiornaMese=null, _aggiornaAnno=null;
+
+function aggiornaArchivioXLS(mese, anno){
+  if(Object.keys(S.xmlIndex).length===0){
+    if(!confirm('ATTENZIONE: nessuna fattura XML in memoria.\n\nSenza le ZIP XML i compensi verranno mantenuti dall\'archivio esistente e aggiornati solo gli importi XLS.\n\nContinuare?')) return;
+  }
+  _aggiornaMese=mese; _aggiornaAnno=anno;
+  var inp=document.getElementById('fi-xls-update');
+  if(!inp){
+    inp=document.createElement('input');
+    inp.type='file'; inp.id='fi-xls-update'; inp.accept='.xls,.xlsx'; inp.multiple=true; inp.style.display='none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change',function(){
+      if(!inp.files.length) return;
+      var backup=JSON.parse(JSON.stringify(S.xlsCorr));
+      S.xlsCorr={};
+      var loaded=0, total=inp.files.length;
+      Array.from(inp.files).forEach(function(f){
+        var r=new FileReader();
+        r.onload=function(e){
+          parseXLSCorr(e.target.result,f.name);
+          loaded++;
+          if(loaded===total) elaboraEAggiorna(_aggiornaMese,_aggiornaAnno,backup);
+        };
+        r.readAsArrayBuffer(f);
+      });
+    });
+  }
+  inp.value=''; inp.click();
+  toast('Seleziona il file XLS aggiornato...');
+}
+
+function elaboraEAggiorna(mese, anno, backup){
+  if(!Object.keys(S.xlsCorr).length){S.xlsCorr=backup;toast('Nessun XLS caricato');return;}
+  var raw=localStorage.getItem(archivioKey(mese,anno));
+  var esistenti=raw?JSON.parse(raw).risultati:[];
+  var nuoviCog=Object.keys(S.xlsCorr);
+
+  nuoviCog.forEach(function(cog){
+    var q=DB[cog]||{pct:70,note:'70% (default)'};
+    var xlsData=S.xlsCorr[cog]||[];
+    var ppList=S.portali[cog]||[];
+    var lordo=0, det=0, righeCalcolate=[], sedi=[];
+
+    xlsData.forEach(function(sede){
+      if(!sedi.includes(sede.sede)) sedi.push(sede.sede);
+      sede.righe.forEach(function(riga){
+        var pazNorm=normStr(riga.paziente);
+        var dv=[
+          normDate(riga.data),
+          normDate(riga.data).replace(/\//g,'-'),
+          normDate(riga.data).replace(/^(\d{2})\/(\d{2})\/(\d{4})$/,'$3-$2-$1')
+        ];
+        var xmlMatch=null;
+        for(var vi=0;vi<dv.length;vi++){
+          var k=pazNorm+'|'+dv[vi];
+          if(S.xmlIndex[k]){
+            var cands=S.xmlIndex[k];
+            xmlMatch=cands.find(function(x){return !x.cognomeMedico||x.cognomeMedico===cog;})||cands[0];
+            break;
+          }
+        }
+        var impFattura=xmlMatch?xmlMatch.imp:0;
+        var compBase=0;
+        if(impFattura>0){
+          if(q.tipo==='cortese'&&xmlMatch.righeLinee&&xmlMatch.righeLinee.length>1){
+            compBase=xmlMatch.righeLinee.reduce(function(s,rl){return s+calcComp(q,rl.imp,rl.desc);},0);
+          } else {
+            compBase=calcComp(q,impFattura,xmlMatch?xmlMatch.desc:riga.desc);
+          }
+        } else {
+          // No XML: usa compenso dall'archivio esistente se disponibile
+          var rigaArch=null;
+          for(var ei=0;ei<esistenti.length&&!rigaArch;ei++){
+            var rc=esistenti[ei].righeCalcolate||[];
+            for(var ri=0;ri<rc.length;ri++){
+              if(rc[ri].paziente===riga.paziente&&rc[ri].data===riga.data){rigaArch=rc[ri];break;}
+            }
+          }
+          compBase=rigaArch?rigaArch.compensoCorretto:riga.imp;
+        }
+        var isPortale=false,impPortale=0,detrazione=0;
+        var pazWords=pazNorm.split(' ').filter(function(w){return w.length>2;});
+        for(var pi=0;pi<S.idoctors.length;pi++){
+          var p=S.idoctors[pi]; if(p.cognomeMedico!==cog) continue;
+          var pDate=normDate(p.data).replace(/\//g,'-');
+          var matchData=dv.some(function(d){return d===pDate||d.replace(/\//g,'-')===pDate;});
+          if(!matchData) continue;
+          var pNorm=normStr(p.paziente).split(' ').filter(function(w){return w.length>2;});
+          if(pazWords.some(function(w){return pNorm.includes(w);})){isPortale=true;impPortale=p.importo||impFattura;detrazione=impPortale*DET;break;}
+        }
+        var compensoCorretto=compBase-detrazione;
+        var errore=Math.abs(riga.imp-compensoCorretto)>0.5;
+        lordo+=compBase; det+=detrazione;
+        righeCalcolate.push({data:riga.data,paziente:riga.paziente,desc:riga.desc,impFattura:impFattura,compBase:compBase,xlsImp:riga.imp,isPortale:isPortale,impPortale:impPortale,detrazione:detrazione,compensoCorretto:compensoCorretto,errore:errore,xmlTrovato:!!xmlMatch});
+      });
+    });
+
+    var imponibile=lordo-det,ritenuta=imponibile*RIT,netto=imponibile-ritenuta;
+    var xlsLordo=xlsData.reduce(function(s,d){return s+d.subtotale;},0);
+    var nErr=righeCalcolate.filter(function(r){return r.errore;}).length;
+    var nuovoRis={cog:cog,q:q,sedi:sedi,lordo:lordo,det:det,imponibile:imponibile,ritenuta:ritenuta,netto:netto,righeCalcolate:righeCalcolate,xlsLordo:xlsLordo,nErr:nErr,fatturato:righeCalcolate.reduce(function(s,r){return s+r.impFattura;},0)||lordo/((q.pct||50)/100)};
+    var idx=esistenti.findIndex(function(r){return r.cog===cog;});
+    if(idx>=0) esistenti[idx]=nuovoRis; else esistenti.push(nuovoRis);
+  });
+
+  var entry={mese:mese,anno:anno,savedAt:new Date().toISOString(),risultati:esistenti};
+  localStorage.setItem(archivioKey(mese,anno),JSON.stringify(entry));
+  S.risultati=esistenti;
+  document.getElementById('sb-per').textContent=mese+' '+anno;
+  renderVerifica(mese,anno); renderCorrispettivi(mese,anno); renderArchivioList();
+  var nb=document.querySelectorAll('.nb')[1]; goTo(nb,'verifica');
+  toast('\u2713 Aggiornato: '+nuoviCog.join(', '));
+}
+
+// ── QUOTE TABLE ──────────────────────────────────────────────
+function renderQuote(){
+  var tb=document.getElementById('quote-tbody');
+  if(!tb) return;
+  tb.innerHTML=Object.entries(DB).map(function(e){var c=e[0],q=e[1];return '<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>';}).join('');
+}
+renderQuote();
+renderArchivioList();
 
 </script>
 </body>
