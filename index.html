@@ -1001,25 +1001,23 @@ function generaExcel(r){
   rows.push([]);
 
   // Header
-  var hdr = ['Data','Paziente'].concat(prestCols).concat(['Totale']);
+  var hdr = ['Data','Paziente'].concat(prestCols);
   rows.push(hdr);
 
   // Dati + subtotali
   var subtot = new Array(prestCols.length).fill(0);
   (r.righeCalcolate||[]).forEach(function(riga){
     var row = [riga.data||'', riga.paziente||''];
-    var tot = 0;
     prestCols.forEach(function(p, i){
       var comp = (riga.desc===p) ? (riga.compensoCorretto!==undefined?riga.compensoCorretto:riga.compBase)||0 : null;
       row.push(comp);
-      if(comp){subtot[i]+=comp; tot+=comp;}
+      if(comp) subtot[i]+=comp;
     });
-    row.push(tot||null);
     rows.push(row);
   });
 
   rows.push([]);
-  rows.push(['Subtotali',''].concat(subtot).concat([subtot.reduce(function(s,v){return s+v;},0)]));
+  rows.push(['Subtotali',''].concat(subtot));
   rows.push([]);
   rows.push(['Totale Imponibile','','','',r.imponibile||r.lordo]);
   rows.push(["Ritenuta d'acconto 20%",'','','',-(r.ritenuta||0)]);
@@ -1032,11 +1030,10 @@ function generaExcel(r){
   // Larghezze colonne
   var cols = [{wch:20},{wch:28}];
   prestCols.forEach(function(){cols.push({wch:24});});
-  cols.push({wch:16});
   ws['!cols'] = cols;
 
   // Merge titolo
-  var nc = 1 + prestCols.length + 1;
+  var nc = 1 + prestCols.length;
   ws['!merges'] = [
     {s:{r:0,c:0},e:{r:0,c:nc}},
     {s:{r:1,c:1},e:{r:1,c:nc}},
