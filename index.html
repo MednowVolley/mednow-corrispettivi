@@ -147,8 +147,6 @@ tr:hover td{background:var(--surface2)}
 .toast.show{opacity:1}
 
 /* PRINT */
-.tr-disc td{background:#FFF9E6!important;border-left:3px solid #F0AD00!important}
-.tr-miss td{background:#FDEDEC!important;border-left:3px solid #E74C3C!important}
 @media print{
   .sb,.topbar,.doc-actions,.btn-row,select{display:none!important}
   .main,.content,.page{overflow:visible!important}
@@ -265,41 +263,22 @@ tr:hover td{background:var(--surface2)}
     <!-- QUOTE -->
     <div id="page-quote" class="page">
       <div class="card">
-        <div class="card-title" style="justify-content:space-between">
-          <span>Quote medici</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <a href="https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/edit" target="_blank" class="btn btn-sm" style="text-decoration:none">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Modifica Sheet
-            </a>
-            <button class="btn btn-p btn-sm" onclick="qeSalvaTutti()">Salva locale</button>
-            <button class="btn btn-sm" onclick="qeReset()">Reset</button>
-          </div>
-        </div>
-        <div class="alert a-info" style="margin-bottom:12px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div>Quote caricate dal <a href="https://docs.google.com/spreadsheets/d/1sBxbFOkHl8sHTEcsBq-EioYLArJUIIu81ggU1jRHCWE/edit" target="_blank" style="color:var(--blue);font-weight:600">Google Sheet</a> ad ogni apertura. Modifica lo Sheet per cambiare le quote su tutti i dispositivi.</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <input id="qe-search" type="text" placeholder="Cerca medico..." style="flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font)" oninput="qeRender()">
-          <select id="qe-filter" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font)" onchange="qeRender()">
-            <option value="">Tutti</option><option value="pct">Percentuale</option><option value="fisso">Fisso</option>
-          </select>
-          <span id="qe-count" style="font-size:12px;color:var(--text3)"></span>
-        </div>
+        <div class="card-title">Quote medici (da anagrafica)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Cognome</th><th>Tipo</th><th style="width:80px">Valore</th><th>Note</th><th style="width:100px">Azioni</th></tr></thead>
-            <tbody id="qe-tbody"></tbody>
+            <thead><tr><th>Cognome</th><th>Accordo</th><th>Tipo</th></tr></thead>
+            <tbody id="quote-tbody"></tbody>
           </table>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)">
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Cognome</div><input type="text" id="qa-cog" placeholder="ROSSI" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font);text-transform:uppercase"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Tipo</div><select id="qa-tipo" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"><option value="pct">% Percentuale</option><option value="fisso">€ Fisso</option></select></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Valore</div><input type="number" id="qa-val" placeholder="70" min="0" step="0.5" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">Note</div><input type="text" id="qa-note" placeholder="es. 70/30" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--font)"></div>
-          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">&nbsp;</div><button class="btn btn-p bt
+      </div>
+    </div>
 
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
 // ── STATO ──────────────────────────────────────────────────
 const S = {
   xmlIndex: {},      // normPaz|normData → [{imp, desc, cognomeMedico}]
@@ -393,20 +372,20 @@ function estraiCognomeMedico(desc){
 
 function calcComp(q, imp, desc){
   if(q.tipo==='gin' && isTampone(desc)) return q.fisso_t||15;
-  if(q.tipo==='misto'){
-    const d = desc.toUpperCase();
-    if(d.includes('ECO')||d.includes('ECODOPPLER')||d.includes('ECOGRAFIA')||d.includes('ECOCOLORDOPPLER')){
-      return q.fisso_eco||50;
-    }
-    return q.pct ? imp*q.pct/100 : imp*0.7;
-  }
   if(q.tipo==='cortese'){
     const d = desc.toUpperCase();
     if(d.includes('PAP')) return q.fisso_pap||150;
     if(isTampone(d)) return q.fisso_t||15;
     if(d.includes('CONTROLLO')) return q.fisso_ctrl||72;
-    if(d.includes('ECO')&&!d.includes('VISITA')) return q.fisso_eco||90;
+    if((d.includes('ECO')||d.includes('ECOGRAFIA'))&&!d.includes('VISITA')) return q.fisso_eco||90;
     return q.fisso||130;
+  }
+  if(q.tipo==='misto'){
+    const d = desc.toUpperCase();
+    if(d.includes('ECO')||d.includes('ECODOPPLER')||d.includes('ECOGRAFIA')){
+      return q.fisso_eco||50;
+    }
+    return q.pct ? imp*q.pct/100 : imp*0.7;
   }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
@@ -430,7 +409,7 @@ function goTo(el, id){
   const tb = document.getElementById('tb-title');
   if(tb) tb.textContent = TITLES[id]||id;
   // Inizializza editor quote quando si apre la pagina
-  if(id==='quote'){ qeInit(); }
+  if(id==='quote'){ if(!QE_DB) qeInit(); else qeRender(); }
 }
 
 // ── DROP ZONE ──────────────────────────────────────────────
@@ -895,69 +874,32 @@ function renderVerifica(mese, anno){
 
 function renderTabellaRighe(r){
   if(!r.righeCalcolate||r.righeCalcolate.length===0) return '';
-
-  var missXML=[], discXLS=[];
-
-  var righe = r.righeCalcolate.map(function(p){
-    var impFatt = p.impFattura||0;
-    var compXLS = p.xlsComp||p.imp||0;
-    var compCorr = p.compensoCorretto!==undefined ? p.compensoCorretto : (p.compBase||compXLS);
-    var diff = Math.round((compCorr - compXLS)*100)/100;
-    var hasDiff = Math.abs(diff)>0.49;
-    var noXML = (!p.xmlTrovato && impFatt===0);
-
-    if(noXML){
-      missXML.push(p.paziente||p.data||'');
-    } else if(hasDiff){
-      discXLS.push((p.paziente||'')
-        +' <span>'+fmt(compXLS)+' → '+fmt(compCorr)
-        +(diff>0?' (+'+fmt(diff)+')':' ('+fmt(diff)+')')+'</span>');
+  const righe = r.righeCalcolate.map(p=>{
+    let cls='', badge='', compStr='€'+fmt(p.compensoCorretto);
+    if(p.errore&&p.xmlTrovato){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">⚠ diff €'+fmt(Math.abs(p.xlsImp-p.compensoCorretto))+'</span>';
+      compStr='<span style="text-decoration:line-through;color:var(--red);font-size:11px">€'+fmt(p.xlsImp)+'</span> → <strong style="color:var(--green)">€'+fmt(p.compensoCorretto)+'</strong>';
+    } else if(p.isPortale&&p.detrazione>0){
+      cls='tr-err';
+      badge='<span class="badge b-warn" style="margin-left:4px">portale -€'+fmt(p.detrazione)+'</span>';
+    } else if(p.isPortale){
+      cls='tr-ok';
+      badge='<span class="badge b-ok" style="margin-left:4px">✓ portale</span>';
+    } else if(!p.xmlTrovato&&p.impFattura===0){
+      badge='<span class="badge b-warn" style="margin-left:4px">no XML</span>';
     }
-
-    var trCls = noXML ? 'tr-miss' : (hasDiff ? 'tr-disc' : '');
-    var impCell = impFatt>0 ? '€'+fmt(impFatt) : '<span style="color:#aaa">—</span>';
-    var diffCell = noXML
-      ? '<td style="color:#c0392b;font-weight:700">—</td>'
-      : hasDiff
-        ? '<td style="font-weight:700;color:'+(diff>0?'#c0392b':'#2d8a4e')+'">'+(diff>0?'+':'')+fmt(diff)+'</td>'
-        : '<td style="color:#2d8a4e">✓</td>';
-
-    return '<tr class="'+trCls+'">'
-      +'<td>'+(p.data||'')+'</td>'
-      +'<td>'+(p.paziente||'')+'</td>'
-      +'<td>'+impCell+'</td>'
-      +'<td style="text-align:right">€'+fmt(compXLS)+'</td>'
-      +'<td style="text-align:right;font-weight:'+(hasDiff?'700':'400')+'">€'+fmt(compCorr)+'</td>'
-      +diffCell
-      +'</tr>';
+    const impCell=p.impFattura>0?'€'+fmt(p.impFattura):'<span style="color:var(--text3)">—</span>';
+    return '<tr class="'+cls+'"><td>'+p.data+'</td><td>'+p.paziente+badge+'</td><td>'+p.desc+'</td><td class="tr-r">'+impCell+'</td><td class="tr-r">€'+fmt(p.xlsImp)+'</td><td class="tr-r">'+compStr+'</td></tr>';
   }).join('');
 
-  // Box riepilogo discrepanze
-  var summary = '';
-  if(missXML.length){
-    summary += '<div style="background:#FDEDEC;border:2px solid #E74C3C;border-radius:8px;padding:10px 14px;margin-bottom:10px">'
-      +'<b style="color:#C0392B">❌ '+missXML.length+' fatture XML mancanti</b>'
-      +'<div style="font-size:12px;color:#C0392B;margin-top:4px">'+missXML.join(' · ')+'</div></div>';
-  }
-  if(discXLS.length){
-    summary += '<div style="background:#FFF3CD;border:2px solid #F0AD00;border-radius:8px;padding:10px 14px;margin-bottom:10px">'
-      +'<b style="color:#854F0B">⚠️ '+discXLS.length+' discrepanze XLS vs fattura XML</b>'
-      +'<div style="font-size:12px;color:#854F0B;margin-top:4px">'+discXLS.join('<br>')+'</div></div>';
-  }
-  if(!missXML.length&&!discXLS.length){
-    summary = '<div style="background:#EAF6EF;border:1px solid #2d8a4e;border-radius:8px;padding:8px 14px;margin-bottom:10px;color:#2d8a4e;font-weight:600">'
-      +'✓ Tutti i compensi corrispondono alle fatture XML</div>';
-  }
+  const nErr=r.righeCalcolate.filter(p=>p.errore||p.isPortale&&p.detrazione>0).length;
+  const sum=nErr>0
+    ?'<div class="alert a-warn" style="margin-bottom:8px">⚠ '+nErr+' righe con compenso da correggere</div>'
+    :'<div class="alert a-ok" style="margin-bottom:8px">✓ Tutti i compensi corretti</div>';
 
-  return summary
-    +'<div class="tbl-wrap"><table>'
-    +'<thead><tr>'
-    +'<th>Data</th><th>Paziente</th>'
-    +'<th>Imp. fattura XML</th>'
-    +'<th style="text-align:right">Comp. XLS</th>'
-    +'<th style="text-align:right">Comp. corretto</th>'
-    +'<th style="text-align:right">Differenza</th>'
-    +'</tr></thead>'
+  return sum+'<div class="tbl-wrap"><table>'
+    +'<thead><tr><th>Data</th><th>Paziente</th><th>Prestazione</th><th>Imp.fattura</th><th>Comp.XLS</th><th>Comp.corretto</th></tr></thead>'
     +'<tbody>'+righe+'</tbody></table></div>';
 }
 
@@ -1001,10 +943,10 @@ function renderCorrispettivi(mese, anno){
 function stampa(cog){
   var r = S.risultati.find(function(x){return x.cog===cog;});
   if(!r){toast('Dati non trovati per '+cog);return;}
-  generaExcel(r);
+  generaExcelCorrispettivo(r);
 }
 
-function generaExcel(r){
+function generaExcelCorrispettivo(r){
   var mese = MESI[+document.getElementById('sel-mese').value];
   var anno = document.getElementById('sel-anno').value;
   var mesePad = String(MESI.indexOf(mese)).padStart(2,'0');
@@ -1018,7 +960,7 @@ function generaExcel(r){
   if(prestCols.length === 0) prestCols = ['Compenso'];
   var rows = [];
   rows.push(['Report compensi ' + r.cog]);
-  rows.push(['AMBULATORIO', r.sedi.join('+')]);
+  rows.push(['AMBULATORIO', (r.sedi||[]).join('+')]);
   rows.push(['PERIODO', 'DAL 01/'+mesePad+'/'+anno, 'AL '+lastDay+'/'+mesePad+'/'+anno]);
   rows.push([]);
   rows.push(['Data','Paziente'].concat(prestCols));
@@ -1053,7 +995,7 @@ function generaExcel(r){
   toast('✓ Excel: '+fname);
 }
 
-function _old_stampa(cog){
+function _stampa_print(cog){
   const el=document.getElementById('doc-'+cog);
   if(!el){toast('Doc non trovato');return;}
   const css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:13px;padding:20px}.doc{border:1px solid #ccc;border-radius:8px;overflow:hidden}.doc-head{background:#185FA5;color:#fff;padding:12px 16px;display:flex;justify-content:space-between}.doc-title{font-size:15px;font-weight:700}.doc-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd}.doc-cell{padding:8px 14px;font-size:12px;border-right:1px solid #ddd}.doc-lbl{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:2px}.tbl-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:11px}th{padding:6px 10px;background:#f5f5f5;text-align:left;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase}td{padding:6px 10px;border-bottom:1px solid #eee}.doc-totali{padding:10px 14px;background:#f9f9f9;border-top:2px solid #ddd}.tot-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}.tot-row.main{border-top:1px solid #ddd;margin-top:4px;padding-top:6px}.doc-footer{padding:6px 14px;font-size:10px;color:#888}.doc-actions{display:none}button{display:none}';
@@ -1070,213 +1012,20 @@ function copia(cog,lordo,det,rit,netto){
   navigator.clipboard.writeText(t).then(()=>toast('Copiato'));
 }
 
-// ── QUOTE EDITOR ENGINE ────────────────────────────────────
-const QE_KEY = 'mednow_quote_v2';
-let QE_DB = null;
-const DB_DEFAULT = JSON.parse(JSON.stringify(DB));
-
-function qeInit(){
-  // Carica da Drive (fonte primaria) → fallback localStorage → fallback DB default
-  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
-  fetch('https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media', {
-    headers: {'Authorization': 'Bearer ' + (window.GAPI_TOKEN||'')}
-  })
-  .then(r => r.ok ? r.json() : null)
-  .then(data => {
-    if(data && typeof data === 'object' && Object.keys(data).length > 0){
-      QE_DB = data;
-      try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
-      Object.assign(DB, QE_DB);
-      toast('Quote caricate da Drive');
-    } else {
-      qeInitLocal();
-    }
-  })
-  .catch(() => qeInitLocal());
-}
-
-function qeInitLocal(){
-  try {
-    const saved = localStorage.getItem(QE_KEY);
-    QE_DB = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DB_DEFAULT));
-    Object.assign(DB, QE_DB);
-  } catch(e) { QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT)); }
-}
-
-function qeSave(){
-  try { localStorage.setItem(QE_KEY, JSON.stringify(QE_DB)); } catch(e){}
-  Object.assign(DB, QE_DB);
-  // Salva su Drive
-  const driveFileId = '1PheXzlDFHzJQLuvIzPFSHnCFZbjIFzv6';
-  const body = JSON.stringify(QE_DB, null, 2);
-  fetch('https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=media', {
-    method: 'PATCH',
-    headers: {
-      'Authorization': 'Bearer ' + (window.GAPI_TOKEN||''),
-      'Content-Type': 'application/json'
-    },
-    body: body
-  })
-  .then(r => {
-    if(r.ok){ toast('Quote salvate su Drive ✓'); }
-    else { toast('Salvate in locale (Drive non disponibile)'); }
-  })
-  .catch(() => toast('Salvate in locale'));
-}
-
-function driveAuth(){
-  // Usa Google Identity Services per ottenere token
-  if(typeof google === 'undefined' || !google.accounts){
-    toast('Caricamento Google Auth...');
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = () => driveAuthExec();
-    document.head.appendChild(s);
-  } else {
-    driveAuthExec();
-  }
-}
-
-function driveAuthExec(){
-  if(typeof google === 'undefined') { toast('Google Auth non disponibile'); return; }
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: '241111319429-ks4t9hpa58n3mde7g8f7vn4h9e7dk6dk.apps.googleusercontent.com',
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    callback: (resp) => {
-      if(resp.access_token){
-        window.GAPI_TOKEN = resp.access_token;
-        document.getElementById('drive-status').textContent = '✓ Drive';
-        document.getElementById('btn-drive').classList.add('btn-p');
-        toast('Drive connesso — ricarico quote...');
-        qeInit();
-      }
-    }
-  });
-  client.requestAccessToken();
-}
-
-function qeReset(){
-  if(!confirm("Ripristinare le quote ai valori predefiniti?")) return;
-  try { localStorage.removeItem(QE_KEY); } catch(e){}
-  QE_DB = JSON.parse(JSON.stringify(DB_DEFAULT));
-  Object.assign(DB, QE_DB);
-  qeRender();
-  toast('Quote ripristinate');
-}
-
-function qeMark(el){
-  const tr = el.closest('tr');
-  if(tr) tr.classList.add('qe-modified');
-}
-
-function qeSalvaTutti(){
-  document.querySelectorAll('.qe-row').forEach(function(tr){
-    const cog = tr.getAttribute('data-cog');
-    if(!cog) return;
-    const tipo = tr.querySelector('.qe-sel').value;
-    const val = parseFloat(tr.querySelector('.qe-inp').value)||0;
-    const note = tr.querySelector('.qe-note').value.trim();
-    if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-    else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-    tr.classList.remove('qe-modified');
-  });
-  qeSave();
-}
-
-function qeSalvaSingolo(el){
-  const tr = el.closest ? el.closest('tr') : null;
-  if(!tr) return;
-  const cog = tr.getAttribute('data-cog');
-  const tipo = tr.querySelector('.qe-sel').value;
-  const val = parseFloat(tr.querySelector('.qe-inp').value)||0;
-  const note = tr.querySelector('.qe-note').value.trim();
-  if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-  else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-  qeSave();
-  tr.classList.remove('qe-modified');
-}
-
-function qeElimina(el){
-  const tr = el.closest ? el.closest('tr') : null;
-  const cog = tr ? tr.getAttribute('data-cog') : null;
-  if(!cog) return;
-  if(!confirm("Eliminare "+cog+"?")) return;
-  delete QE_DB[cog];
-  qeSave();
-  qeRender();
-}
-
-function qeAggiungi(){
-  const cogEl=document.getElementById('qa-cog');
-  const tipoEl=document.getElementById('qa-tipo');
-  const valEl=document.getElementById('qa-val');
-  const noteEl=document.getElementById('qa-note');
-  if(!cogEl||!valEl) return;
-  const cog=cogEl.value.toUpperCase().trim();
-  const tipo=tipoEl?tipoEl.value:'pct';
-  const val=parseFloat(valEl.value)||0;
-  const note=noteEl?noteEl.value.trim():'';
-  if(!cog){toast('Inserisci cognome');return;}
-  if(!val){toast('Inserisci valore');return;}
-  if(QE_DB[cog]){toast(cog+' esiste');return;}
-  if(tipo==='pct') QE_DB[cog]={pct:val,note:note||val+'%'};
-  else QE_DB[cog]={pct:null,fisso:val,note:note||'€'+val};
-  qeSave();
-  cogEl.value=''; valEl.value=''; if(noteEl) noteEl.value='';
-  qeRender();
-}
-
-function qeRender(){
-  if(!QE_DB){qeInit();return;}
-  const searchEl=document.getElementById('qe-search');
-  const filterEl=document.getElementById('qe-filter');
-  const search=searchEl?searchEl.value.toLowerCase():'';
-  const filtro=filterEl?filterEl.value:'';
-  const tb=document.getElementById('qe-tbody');
-  if(!tb) return;
-  const entries=Object.entries(QE_DB)
-    .filter(function(e){return(!search||e[0].toLowerCase().includes(search))&&(!filtro||(filtro==='pct'?e[1].pct:!e[1].pct));})
-    .sort(function(a,b){return a[0].localeCompare(b[0]);});
-  const cnt=document.getElementById('qe-count');
-  if(cnt) cnt.textContent=entries.length+' medici';
-  tb.innerHTML=entries.map(function(entry){
-    const c=entry[0],q=entry[1];
-    const isPct=!!q.pct;
-    const val=isPct?q.pct:(q.fisso||0);
-    return '<tr class="qe-row" data-cog="'+c+'">'
-      +'<td style="font-weight:600">'+c+'</td>'
-      +'<td><select class="qe-sel" onchange="qeMark(this)">'
-      +'<option value="pct"'+(isPct?' selected':'')+'>% Perc.</option>'
-      +'<option value="fisso"'+(!isPct?' selected':'')+'>€ Fisso</option>'
-      +'</select></td>'
-      +'<td><input type="number" class="qe-inp" value="'+val+'" min="0" step="0.5" oninput="qeMark(this)"></td>'
-      +'<td><input type="text" class="qe-note" value="'+(q.note||'').replace(/"/g,'&quot;')+'" oninput="qeMark(this)"></td>'
-      +'<td style="white-space:nowrap">'
-      +'<button class="qe-save" onclick="qeSalvaSingolo(this)">Salva</button>&nbsp;'
-      +'<button class="qe-del" onclick="qeElimina(this)">✕</button>'
-      +'</td></tr>';
-  }).join('');
-}
-
+// ── QUOTE TABLE ────────────────────────────────────────────
 function renderQuote(){
-  if(!QE_DB) qeInit(); else qeRender();
+  const tb=document.getElementById('quote-tbody');
+  if(!tb) return;
+  tb.innerHTML=Object.entries(DB).map(([c,q])=>'<tr><td style="font-weight:600">'+c+'</td><td>'+q.note+'</td><td><span class="badge '+(q.pct?'b-blue':'b-ok')+'">'+(q.pct?'%':'Fisso')+'</span></td></tr>').join('');
 }
+renderQuote();
 
-// Carica QE_DB al boot (senza render DOM)
-// Carica quote al boot da localStorage (Drive richiede auth esplicita)
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded", qeInitLocal);
+// Init al caricamento
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", qeInit);
 } else {
-  qeInitLocal();
+  qeInit();
 }
-
-age (Drive richiede auth esplicita)
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded", qeInitLocal);
-} else {
-  qeInitLocal();
-}
-
 </script>
 </body>
 </html>
