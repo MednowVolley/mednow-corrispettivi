@@ -269,9 +269,24 @@ tr:hover td{background:var(--surface2)}
 
     <!-- ARCHIVIO -->
     <div id="page-archivio" class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="font-size:15px;font-weight:600">Mesi archiviati</div>
-        <button class="btn btn-sm" onclick="clearArchivio()" style="color:var(--red);border-color:var(--red)">Svuota archivio</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="esportaArchivio()" title="Scarica tutto l'archivio come file JSON — salvalo su Drive">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Esporta JSON
+          </button>
+          <label class="btn btn-sm" style="cursor:pointer" title="Importa un archivio JSON precedentemente esportato">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importa JSON
+            <input type="file" accept=".json" style="display:none" onchange="importaArchivio(this)">
+          </label>
+          <button class="btn btn-sm" onclick="clearArchivio()" style="color:var(--red);border-color:var(--red)">Svuota</button>
+        </div>
+      </div>
+      <div class="alert a-info" style="margin-bottom:12px;font-size:12px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>L'archivio è salvato in questo browser. Usa <strong>Esporta JSON</strong> per salvarlo su Google Drive e poterlo recuperare da qualsiasi dispositivo.</span>
       </div>
       <div id="archivio-list"></div>
     </div>
@@ -424,8 +439,9 @@ function goTo(el, id){
   if(pg) pg.classList.add('on');
   const tb = document.getElementById('tb-title');
   if(tb) tb.textContent = TITLES[id]||id;
-  // Inizializza editor quote quando si apre la pagina
+  // Inizializza pagine alla navigazione
   if(id==='quote'){ if(!QE_DB) qeInit(); else qeRender(); }
+  if(id==='archivio'){ renderArchivioList(); }
 }
 
 // ── DROP ZONE ──────────────────────────────────────────────
@@ -1256,6 +1272,44 @@ function elaboraEAggiorna(mese, anno, backup){
   var navBtn = document.querySelectorAll('.nb')[1];
   goTo(navBtn, 'verifica');
   toast('\u2713 Aggiornato: '+nuoviCog.join(', '));
+}
+
+
+// ── ESPORTA / IMPORTA ARCHIVIO JSON ──────────────────────────
+function esportaArchivio(){
+  var list = getArchivioList();
+  if(!list.length){ toast('Archivio vuoto — nulla da esportare'); return; }
+  var blob = new Blob([JSON.stringify({v:1, esportato: new Date().toISOString(), archivio: list}, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'mednow_archivio_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('✓ Archivio esportato — salvalo su Drive');
+}
+
+function importaArchivio(input){
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var data = JSON.parse(e.target.result);
+      var list = data.archivio || (Array.isArray(data) ? data : []);
+      if(!list.length){ toast('File JSON vuoto o non valido'); return; }
+      var importati = 0;
+      list.forEach(function(entry){
+        if(entry.mese && entry.anno && entry.risultati){
+          localStorage.setItem(archivioKey(entry.mese, entry.anno), JSON.stringify(entry));
+          importati++;
+        }
+      });
+      renderArchivioList();
+      toast('✓ Importati '+importati+' mes'+(importati===1?'e':'i'));
+    } catch(ex){ toast('Errore importazione: '+ex.message); }
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ── QUOTE TABLE ────────────────────────────────────────────
