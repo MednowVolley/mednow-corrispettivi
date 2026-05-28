@@ -1,0 +1,60 @@
+Cognome,Tipo,Valore,Fisso_Eco,Fisso_Tampone,Tipo_Speciale,Note
+ABRATE,fisso,35,,,,€35 trattamento
+ACCORNERO,pct,70,50,,misto,"70% visite, €50 eco"
+ADINOLFI,pct,70,,,,70%
+ALESSI,pct,70,,,,70%
+ALGERI,pct,80,,,,80%
+ANGILLETTA,pct,70,,,,70%
+BONO,pct,60,,,,60%
+BUONAIUTO,fisso,105,,,,€105 vis €50 eco
+CALCAGNI,pct,20,,15,gin,20% + €15 tamponi
+CANTIANI,pct,80,,,,80%
+CAPUANO,pct,70,,,,70%
+CASTORO,pct,60,,,,60%
+CAZZANIGA,pct,,70,,,€105 vis €70 eco
+COCCIOLO,fisso,50,,,,€50 eco
+COLAFRANCESCO,pct,60,,,,60%
+CORTESE,pct,60,50,15,misto,"vis+eco €140, ctrl €72, tampone €15, eco €50"
+COSTANTINI,pct,50,,,,50%
+EGIDDI,fisso,60,,,,€60 prima €45 ctrl
+ERGASTI,pct,60,,,,60%
+FANTI,pct,60,,,,60%
+FRISOTTI,fisso,65,,,,€65 visita
+GASPARINI,pct,65,,,,65%
+GHEZZI,pct,60,,,,60%
+GIOMBI,pct,60,,,,60%
+GIRARDENGO,pct,60,,,,60%
+GOBITTO,fisso,35,,,,€35 trattamento
+ISIDORI,pct,60,,,,60%
+LENTI,fisso,50,,,,€50 visita
+LOMMANO,pct,70,,,,70%
+LUGLIO,pct,80,,,,80%
+MACCHIONE,pct,70,,,,70%
+MAINARDI,pct,65,,,,65%
+MAISTO,fisso,50,,,,€50 eco
+MASCHERONI,pct,70,,,,70%
+MASSARO,pct,75,,,,75%
+MEAZZA,pct,60,,,,60%
+MENZEL,pct,70,,,,70%
+MOGGI,fisso,35,,,,€35 trattamento
+MONESTIER,pct,50,,,,50%
+MUNGIOLI,fisso,35,,,,€35 sed €25 ctrl
+MURARI,pct,60,,,,60%
+NICORA,pct,60,,,,60%
+PADULA,pct,60,,15,gin,60% + €15 tamponi
+PAGLIARO,pct,70,,,,70%
+PANE,pct,60,,,,60%
+PEDULLA,fisso,35,,,,€35 trattamento
+PELAMATTI,pct,70,,,,70%
+POZIELLO,pct,65,,,,65%
+QUARANTA,pct,70,,,,70%
+ROVEDA,pct,60,,,,60%
+SARAIS,pct,70,,15,gin,70% + €15 tamponi
+SCARABEO,pct,70,,,,70%
+SINISI,pct,70,,,,70%
+STROPPA,pct,70,,,,70%
+TACCONI,pct,70,,,,70%
+VITALE,pct,60,,,,60%
+ZANARDI,pct,70,,,,70%
+ZANINETTI,pct,65,,,,65%
+ZAMPELLA,pct,70,,,,70%
