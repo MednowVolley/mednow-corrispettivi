@@ -179,7 +179,7 @@ tr:hover td{background:var(--surface2)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Quote medici
     </button>
   </nav>
-  <div class="sb-footer">Periodo<strong id="sb-per">—</strong></div>
+  <div class="sb-footer">Periodo<strong id="sb-per">—</strong><span id="sb-arch-count" style="display:block;margin-top:4px"></span></div>
 </aside>
 
 <div class="main">
@@ -855,6 +855,13 @@ function elabora(){
   const navBtn = document.querySelectorAll('.nb')[1];
   if(navBtn) goTo(navBtn, 'verifica');
   toast('Elaborati '+S.risultati.length+' medici');
+  // Auto-archivia dopo elaborazione
+  if(S.risultati.length > 0){
+    var _mese = MESI[parseInt(document.getElementById('sel-mese').value)];
+    var _anno = document.getElementById('sel-anno').value;
+    var _entry = { mese:_mese, anno:_anno, savedAt: new Date().toISOString(), risultati: JSON.parse(JSON.stringify(S.risultati)) };
+    try { localStorage.setItem(archivioKey(_mese, _anno), JSON.stringify(_entry)); } catch(e){}
+  }
 }
 
 // ── RENDER VERIFICA ────────────────────────────────────────
@@ -1049,7 +1056,7 @@ function archivioKey(mese, anno){ return 'mednow_corr:'+anno+':'+mese; }
 function salvaArchivio(){
   var mese = MESI[parseInt(document.getElementById('sel-mese').value)];
   var anno = document.getElementById('sel-anno').value;
-  if(!S.risultati.length){ toast('Nessun dato da salvare'); return; }
+  if(!S.risultati.length){ toast('⚠ Prima elabora i file, poi archivia'); return; }
   var entry = { mese:mese, anno:anno, savedAt: new Date().toISOString(), risultati: JSON.parse(JSON.stringify(S.risultati)) };
   try {
     localStorage.setItem(archivioKey(mese, anno), JSON.stringify(entry));
@@ -1071,6 +1078,8 @@ function getArchivioList(){
 
 function renderArchivioList(){
   var list = getArchivioList();
+  var cnt = document.getElementById('sb-arch-count');
+  if(cnt) cnt.textContent = list.length ? list.length+' mes'+(list.length===1?'e':'i') : '';
   var el = document.getElementById('archivio-list');
   if(!list.length){
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">\u2014 Nessun mese archiviato. Elabora e premi "Archivia" per salvare.</div>';
