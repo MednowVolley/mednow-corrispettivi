@@ -329,7 +329,7 @@ const DB = {
   ABRATE:{fisso:35,note:'€35 trattamento'},ACCORNERO:{pct:70,fisso_eco:50,tipo:'misto',note:'70% visite, €50 eco'},
   ADINOLFI:{pct:70,note:'70%'},ALESSI:{pct:70,note:'70%'},
   ALGERI:{pct:80,note:'80%'},ANGILLETTA:{pct:70,note:'70%'},
-  BONO:{pct:60,note:'60%'},BUONAIUTO:{fisso:105,note:'€105 vis €50 eco'},
+  BONO:{pct:60,note:'60%'},BUONAIUTO:{fisso:105,fisso_eco:50,note:'€105 vis €50 eco'},
   CALCAGNI:{pct:20,tipo:'gin',fisso_t:15,note:'20% + €15 tamponi'},
   CANTIANI:{pct:80,note:'80%'},CAPUANO:{pct:70,note:'70%'},
   CASTORO:{pct:60,note:'60%'},
@@ -418,6 +418,7 @@ function calcComp(q, imp, desc){
     }
     return q.pct ? imp*q.pct/100 : imp*0.7;
   }
+  if(q.fisso_eco){ const de=desc.toUpperCase(); if((de.includes('ECO')||de.includes('ECOGRAFIA'))&&!de.includes('VISITA')) return q.fisso_eco; }
   if(q.fisso) return q.fisso;
   if(q.pct) return imp * q.pct/100;
   return imp * 0.5;
